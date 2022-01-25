@@ -1,0 +1,17 @@
+archiveCollection(String tokenMintAddress)
+|
+-> Archives Collection if collection name is not cataloged already.
+|   |
+|   -> Calls getTokenURI(tokenMintAddress) to get the collection URI link
+|        |
+|        -> Then calls gatherMetaData(URL) to start collecting all gather all meta data 
+|            |
+|            -> Examines the end of the link for a /123.json or 123 then goes to 0
+|            -> Repeatedly gets links from 0 to infinity until the response is no item found
+|            -> Then calls sortMetaData(String metadata) to sort metadata into a json file with all collection data
+|                    |
+|                    -> sortMetaData calculates rarity attributes and puts it on top, and creates an entry for each nft in 
+|                       the collection along with its statistical rarity. This way the data is pre sorted pre calculated so 
+|                       when user searches a collection not much is done.
+|
+-> If already cataloged doesn't do anything.
