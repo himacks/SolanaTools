@@ -110,7 +110,7 @@ function queryNewCollection(creatorTokenAddress)
 
                 if(i%20 == 0)
                 {
-                    delay += 100;
+                    delay += 300;
                 }
                 
                 promises.push(
@@ -200,11 +200,15 @@ let getNFTMetaData = async function(tokenPDA, attempt) {
             {
                 resolve(undefined);
             }
-            else
+            else if(attempt < 12)
             {
                 setTimeout( async function() {
                     resolve(await getNFTMetaData(tokenPDA, attempt+1));
                 }, 10000);
+            }
+            else
+            {
+                resolve("invalid");
             }
         }
     });
@@ -227,6 +231,12 @@ let getExternalNFTMetaData = async function(tokenPDA, delay, attempt) {
 
             const metadataParent = (await getNFTMetaData(tokenPDA, 0));
 
+            if(metadataParent == "invalid")
+            {
+                resolve("invalid");
+                return;
+            }
+
             const metadata = metadataParent.data["data"];
 
             try {
@@ -242,19 +252,19 @@ let getExternalNFTMetaData = async function(tokenPDA, delay, attempt) {
                 //console.log("Name: " + metadata["name"]);
 
                 
-                console.log(metadata["name"] + " Failed Attempt: "+ attempt + " - axios failed, retrying...")
-                console.log("URI: " + metadata["uri"]);
+                //console.log(metadata["name"] + " Failed Attempt: "+ attempt + " - axios failed, retrying...")
+                //console.log("URI: " + metadata["uri"]);
 
-                if(attempt < 3)
+                if(attempt < 5)
                 {
                     setTimeout(async function() {
-                        resolve(await getExternalNFTMetaData(tokenPDA, delay, attempt+1));
+                        resolve(await getExternalNFTMetaData(tokenPDA, 10000, attempt+1));
                     }, 1000 * Math.floor(Math.random() * (11) + 10)) //can rewrite this in future to adjust delay based on how many retry elements are in the stack, more items = more delay range, less items = less delay range
                 }
                 else
                 {
-                    console.log(metadata["name"] + " Not Minted");
-                    console.log("Mint: " + metadataParent.data["mint"]);
+                    //console.log(metadata["name"] + " Not Minted");
+                    //console.log("Mint: " + metadataParent.data["mint"]);
                     resolve("invalid");
                 }
 
@@ -313,7 +323,7 @@ function addToCollection(tokenPDA, collectionSize, delay)
 
             if(thismetadata == "invalid")
             {
-                console.log("Too many failed attempts or NFT is not minted... probably the latter")
+                //console.log("Too many failed attempts or NFT is not minted... probably the latter")
                 resolve("invalid");
             }
             else
@@ -603,7 +613,7 @@ async function getPDA(tokenAddress)
     return (await mpltokenmetadata.Metadata.getPDA(tokenAddress));
 }
 
-//testSort('boryokumonkeyz');
+testSort('solanaboredfolks');
 
 /*
 
