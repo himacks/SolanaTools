@@ -7,8 +7,12 @@
         <title>Document</title>
     </head>
     <body>
-        <input id="creatorTokenInput" placeholder="Creator Token Address"></input>
-        <button id="sendMetaDataBtn">Get MetaData!</button>
+        <input id="tokenInput" placeholder="Token Address"></input>
+        <select name="Token Address Type" id="tokenType">
+            <option value="mintAddress">Mint Address</option>
+            <option value="creatorAddress">Creator Address</option>
+          </select>
+        <button id="sendMetaDataBtn">Get Collection MetaData!</button>
     </body>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
     <script src="app.js"></script>

@@ -5,11 +5,13 @@ const btnGetMetaData = document.querySelector('#sendMetaDataBtn');
 
 btnGetMetaData.addEventListener('click', function()
 {
-    var inputData = $("#creatorTokenInput").val();
+    var inputData = $("#tokenInput").val();
 
-    var data = {"creatorTokenAddress": inputData};
+    var tokenType = $("#tokenType").val();
 
-    var extension = "/getMetaData";
+    var data = {"tokenAddress": inputData, "tokenType": tokenType};
+
+    var extension = "/getCollectionMetaData";
 
     postData(data, extension);
 });
