@@ -34,33 +34,44 @@ app.use("/getCollectionMetaData", (req, res) => {
 
         var tokenType = req.body.tokenType;
 
-        console.log("Recieved POST Request to parse collection using " + tokenType + ": " + tokenAddress);
-
-        if(tokenType == "creatorAddress")
+        var letterNumber = /^[0-9a-zA-Z]+$/;
+        
+        if(tokenAddress.match(letterNumber))
         {
-            var creatorTokenAddress = tokenAddress;
-            queryNewCollection(creatorTokenAddress);
+            console.log("Recieved POST Request to parse collection using " + tokenType + ": " + tokenAddress);
 
+            if(tokenType == "creatorAddress")
+            {
+                var creatorTokenAddress = tokenAddress;
+                queryNewCollection(creatorTokenAddress);
+    
+            }
+            else if(tokenType == "mintAddress")
+            {
+                getPDA(tokenAddress).then(async function(tokenPDA) {
+                    var NFTMetadata = await getNFTMetaData(tokenPDA, -1);
+    
+                    if(NFTMetadata === undefined)
+                    {
+                        console.log("Creator not Found from Mint Token Input. Invalid Token Input...");
+                    }
+                    else
+                    {
+                        var creatorTokenAddress = NFTMetadata.data["data"]["creators"][0]["address"]
+    
+                        console.log("Creator Found from Mint Token Input...");
+                    
+                        queryNewCollection(creatorTokenAddress);
+                    }
+                });
+            }
         }
-        else if(tokenType == "mintAddress")
+        else
         {
-            getPDA(tokenAddress).then(async function(tokenPDA) {
-                var NFTMetadata = await getNFTMetaData(tokenPDA, -1);
-
-                if(NFTMetadata === undefined)
-                {
-                    console.log("Creator not Found from Mint Token Input. Invalid Token Input...");
-                }
-                else
-                {
-                    var creatorTokenAddress = NFTMetadata.data["data"]["creators"][0]["address"]
-
-                    console.log("Creator Found from Mint Token Input...");
-                
-                    queryNewCollection(creatorTokenAddress);
-                }
-            });
+            console.log("Invalid Input Given...");
         }
+
+        
 
         
 
@@ -81,9 +92,7 @@ function queryNewCollection(creatorTokenAddress)
 {
     return new Promise((resolve) =>
     {
-        let queriedSerializedMap = getMintsFromCreator(creatorTokenAddress);
-
-        queriedSerializedMap.then(function(serializedMap) {
+        getMintsFromCreator(creatorTokenAddress).then(function(serializedMap) {
 
             console.log("Found Serialized Map for Collection!")
 
@@ -95,12 +104,14 @@ function queryNewCollection(creatorTokenAddress)
 
             var delay = 0; //ms
 
-            console.log("Adding " + collectionSize + " Items To New Collection");
+            console.log("Adding " + collectionSize + " Found Tokens To New Collection");
             const b1 = new cliProgress.SingleBar({
                 format: 'Progress [{bar}] {percentage}% | {value}/{total} NFTs Parsed'
             }, cliProgress.Presets.shades_classic);
 
             b1.start(collectionSize, 0);
+
+            var successfulNFTParsed = 0;
 
             for(let i = 0; i < collectionSize; i++) //timeout error happens here
             {
@@ -117,6 +128,10 @@ function queryNewCollection(creatorTokenAddress)
                     new Promise(function(resolve) {
                         addToCollection(nftPDA, collectionSize, delay).then( function(result) {
                             b1.increment();
+                            if(result != "invalid")
+                            {
+                                successfulNFTParsed++;
+                            }
                             resolve(result);
                         });
                     })
@@ -124,22 +139,16 @@ function queryNewCollection(creatorTokenAddress)
             }
             
             Promise.all(promises).then((results) => {
-            // do what you want on the results
-                //console.log("promises finished");
 
                 b1.stop();
-                var numInvalidNFTs = 0;
-                var collectionName;
+                var collectionName = "invalid";
 
                 for(const item of results)
                 {
-                    if(item == "invalid")
-                    {
-                        numInvalidNFTs += 1;
-                    }
-                    else
+                    if(item != "invalid")
                     {
                         collectionName = item;
+                        break;
                     }
                 }
 
@@ -149,8 +158,8 @@ function queryNewCollection(creatorTokenAddress)
                 }
                 else
                 {
-                    console.log("Collection Size Post-Parsing: " + (collectionSize - numInvalidNFTs));
-                    modifyCollectionSize(collectionName, numInvalidNFTs, "reduce");
+                    console.log("Collection Size Post-Parsing: " + successfulNFTParsed);
+                    modifyCollectionSize(collectionName, successfulNFTParsed, "overwrite");
                     validateCollectionRarities(collectionName);
                     saveToFile(collectionName);
                 }
@@ -172,6 +181,10 @@ function modifyCollectionSize(collectionName, inputCount, modifyType)
     {   
         collectionDatabase[collectionName]["collectionCount"] -= inputCount;
     }
+    else if(modifyType == "add")
+    {   
+        collectionDatabase[collectionName]["collectionCount"] += inputCount;
+    }
     else if(modifyType == "overwrite")
     {
         collectionDatabase[collectionName]["collectionCount"] = inputCount;
@@ -180,7 +193,7 @@ function modifyCollectionSize(collectionName, inputCount, modifyType)
 
 }
 
-let getNFTMetaData = async function(tokenPDA, attempt) {
+async function getNFTMetaData(tokenPDA, attempt) {
 
     if(attempt === undefined) { attempt = 0; }
 
@@ -212,18 +225,9 @@ let getNFTMetaData = async function(tokenPDA, attempt) {
             }
         }
     });
-
-    /*
-
-    mpltokenmetadata.Metadata.load(connection, tokenPDA).then(function(foundMetaData) {
-        console.log("Retrieving NFT Metadata")
-        return foundMetaData.data["data"]
-    });
-
-    */
 }
 
-let getExternalNFTMetaData = async function(tokenPDA, delay, attempt) {
+async function getExternalNFTMetaData(tokenPDA, delay, attempt) {
 
     return new Promise(async function(resolve) {
 
@@ -281,7 +285,7 @@ let getExternalNFTMetaData = async function(tokenPDA, delay, attempt) {
   
 
 
-let getMintsFromCreator = async function(creatorTokenAddress)
+async function getMintsFromCreator(creatorTokenAddress)
 {
     //console.log(creatorTokenAddress);
 
@@ -315,7 +319,7 @@ let getMintsFromCreator = async function(creatorTokenAddress)
 }
 
 
-function addToCollection(tokenPDA, collectionSize, delay)
+function addToCollection(tokenPDA, delay)
 {
     return new Promise((resolve) => {
         getExternalNFTMetaData(tokenPDA, delay, 0).then(function(thismetadata) {
@@ -332,12 +336,7 @@ function addToCollection(tokenPDA, collectionSize, delay)
         
                 //console.log(collectionName);
 
-                fetchCollection(collectionName, collectionSize).then( () => {
-                    if(collectionDatabase[collectionName] !== undefined && collectionSize != collectionDatabase[collectionName]["collectionSize"])
-                    {
-                        modifyCollectionSize(collectionName, collectionSize, "overwrite");
-                    }
-                    
+                fetchCollection(collectionName).then( () => {                    
                     if(collectionDatabase[collectionName]["items"][thismetadata["name"]] === undefined)
                     {
                         collectionDatabase[collectionName]["items"][thismetadata["name"]] = thismetadata;
@@ -352,7 +351,7 @@ function addToCollection(tokenPDA, collectionSize, delay)
 
 const collectionsInStack = [];
 
-function fetchCollection(collectionName, collectionSize)
+function fetchCollection(collectionName)
 {
     return new Promise(function(resolve) {
         if(collectionDatabase[collectionName] === undefined)
@@ -361,7 +360,7 @@ function fetchCollection(collectionName, collectionSize)
             {
                 //console.log("Collection is being fetched from directory. Not opening instead waiting.");
                 setTimeout(async function() {
-                    resolve(await fetchCollection(collectionName, collectionSize));
+                    resolve(await fetchCollection(collectionName));
                 }, 1000);
             }
             else
@@ -373,7 +372,7 @@ function fetchCollection(collectionName, collectionSize)
                     {
                         //console.log("Couldn't find collection in lib database, creating new one.");
 
-                        createNewCollection(collectionName, collectionSize)
+                        createNewCollection(collectionName)
                     }
                     else
                     {
@@ -396,85 +395,6 @@ function fetchCollection(collectionName, collectionSize)
     });
 }
 
-function calculateNFTRarity(collectionName)
-{
-    if(collectionDatabase[collectionName] === undefined)
-    {
-        console.log("Error: Collection not Cataloged");
-    }
-    else
-    {   
-
-        var attributeDictionary = collectionDatabase[collectionName]["attributeDictionary"];
-
-        for(const [key, value] of Object.entries(collectionDatabase[collectionName]["items"]))
-        {
-            var attributeList = value["attributes"];
-            var masterRarity = 1.0;
-
-            for(const attribute of attributeList)
-            {
-                var traitType = attribute["trait_type"];
-                var traitValue = attribute["value"];
-
-                var rarity = attributeDictionary[traitType]["Items"][traitValue]["Rarity"];
-
-                masterRarity *= rarity;
-            }
-
-            value["masterRarity"] = masterRarity;
-
-        }
-    }
-}
-
-
-/*
-
-var attributeList = [
-    {
-        "trait_type": "Backdround",
-        "value": "Blue"
-    },
-    {
-        "trait_type": "Body",
-        "value": "Monkey"
-    },
-    {
-        "trait_type": "Cloth",
-        "value": "Bone"
-    },
-    {
-        "trait_type": "Face",
-        "value": "Cigarette"
-    },
-    {
-        "trait_type": "Head",
-        "value": "IceCreamWhite"
-    },
-    {
-        "trait_type": "Ears",
-        "value": "Knife"
-    }
-];
-
-
-const collectionDatabase = {
-    "boryokumonkeyz":
-    {
-        "name": "boryokumonkeyz",
-        "collectionCount": 20,
-        "attributeDictionary": {
-            
-            "BackgroundTest" : {"Items": {"Blue": {"Count": 1, "Rarity": 1/20}, "None": {"Count": 3, "Rarity": 3/20}, "Black": {"Count": 4, "Rarity": 4/20}, "Red": {"Count": 5, "Rarity": 5/20}}}
-            
-        },
-        "items": []
-    }
-}
-
-*/
-
 function validateCollectionRarities(collectionName)
 {
     if(collectionDatabase[collectionName] === undefined)
@@ -491,12 +411,12 @@ function validateCollectionRarities(collectionName)
 
         for(const [key, value] of Object.entries(collectionDatabase[collectionName]["items"]))
         {
-            var attributeList = value["attributes"];
+            const attributeList = value["attributes"];
 
             for(const attribute of attributeList)
             {
-                var traitType = attribute["trait_type"];
-                var traitValue = attribute["value"];
+                const traitType = attribute["trait_type"];
+                const traitValue = attribute["value"];
 
                 //console.log("Trait Type: " + traitType);
                 //console.log("Trait Value: " + traitValue);
@@ -509,12 +429,13 @@ function validateCollectionRarities(collectionName)
 
                 if(attributeDictionary[traitType]["Items"][traitValue] === undefined)
                 {
-                    attributeDictionary[traitType]["Items"][traitValue] = {"Count": 1, "Rarity": 1/collectionSize};
+                    attributeDictionary[traitType]["Items"][traitValue] = {"Count": 1, "Rarity": collectionSize};
                 }
                 else
                 {
-                    attributeDictionary[traitType]["Items"][traitValue]["Count"] += 1;
-                    attributeDictionary[traitType]["Items"][traitValue]["Rarity"] = (attributeDictionary[traitType]["Items"][traitValue]["Rarity"] * collectionSize + 1) / collectionSize;
+                    attributeDictionary[traitType]["Items"][traitValue]["Count"]++;
+
+                    attributeDictionary[traitType]["Items"][traitValue]["Rarity"] = attributeDictionary[traitType]["Items"][traitValue]["Count"] / collectionSize;
                 }
             }
         }
@@ -523,24 +444,24 @@ function validateCollectionRarities(collectionName)
 
         for(const [key, value] of Object.entries(collectionDatabase[collectionName]["items"]))
         {
-            var attributeList = value["attributes"];
+            const attributeList = value["attributes"];
 
             var masterRarity = 1;
 
-
             for(const attribute of attributeList)
             {
-                var traitType = attribute["trait_type"];
-                var traitValue = attribute["value"];
-                masterRarity *= attributeDictionary[traitType]["Items"][traitValue]["Rarity"];
+                const traitType = attribute["trait_type"];
+                const traitValue = attribute["value"];
+                const traitValueRarity = attributeDictionary[traitType]["Items"][traitValue]["Rarity"];
+                masterRarity *= traitValueRarity;
             }
 
             value["masterRarity"] = masterRarity;
-
         }
 
     }
 }
+
 
 function saveToFile(collectionName)
 {
@@ -563,11 +484,11 @@ function saveToFile(collectionName)
 }
 
 
-function createNewCollection(collectionName, collectionSize)
+function createNewCollection(collectionName)
 {
     collectionData = {
             "name": collectionName,
-            "collectionCount": collectionSize,
+            "collectionCount": 0,
             "attributeDictionary": {
                 /*
                 "attributeName (eg. Background)": {"possibleValues": {"Red": {"Count": 5, "Rarity": 0.05}, "None": {"Count": 95, "Rarity": 0.95}}}}
@@ -593,7 +514,7 @@ function testSort(collectionName)
             var nftList = Object.values(collectionData["items"]);
 
             nftList.sort(function(a, b) { 
-                return b.masterRarity - a.masterRarity;
+                return a.masterRarity - b.masterRarity;
             })
             
             fs.writeFile("lib/testing.json" , JSON.stringify(nftList), function(err) {
@@ -607,13 +528,14 @@ function testSort(collectionName)
     })
 }
 
-
 async function getPDA(tokenAddress)
 {
     return (await mpltokenmetadata.Metadata.getPDA(tokenAddress));
 }
 
-testSort('solanaboredfolks');
+
+
+
 
 /*
 
@@ -656,3 +578,4 @@ fetchCollection("spacerunnersxnbachampions", 10000).then( () => {
 
 
 */
+
