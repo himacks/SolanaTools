@@ -54,7 +54,7 @@ function queryNewCollection(creatorTokenAddress)
                 );
             }
             
-            Promise.all(promises).then((results) => {
+            Promise.all(promises).then(() => {
 
                 b1.stop();
 
