@@ -471,6 +471,10 @@ function saveToFile(collectionName)
     }
     else
     {
+        if (!fs.existsSync('./lib')){
+            fs.mkdirSync('./lib');
+        }
+
         fs.writeFile("lib/" + collectionName +".json" , JSON.stringify(collectionDatabase[collectionName]), function(err) {
             if(err) {
                 console.log(err);
