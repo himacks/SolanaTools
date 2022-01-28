@@ -4,7 +4,7 @@ const collection = require("./utils/collection.js");
 
 function queryNewCollection(creatorTokenAddress)
 {
-    return new Promise((resolve) =>
+    return new Promise((resolve, reject) =>
     {
         metaplex.getMintsFromCreator(creatorTokenAddress).then(function(serializedMap) {
 
@@ -61,6 +61,7 @@ function queryNewCollection(creatorTokenAddress)
                 if(collectionSize == 0)
                 {
                     console.log("Error: Address provided contains no valid NFTs")
+                    reject();
                 }
                 else
                 {
@@ -68,10 +69,9 @@ function queryNewCollection(creatorTokenAddress)
                     newNFTCollection.modifyCollectionSize(successfulNFTParsed, "overwrite");
                     newNFTCollection.validateCollectionRarities();
                     newNFTCollection.saveToDatabase();
-                    collectionDatabase.push(newNFTCollection);
+                    resolve(newNFTCollection);
                 }
 
-                resolve();
             });
         })
     })
