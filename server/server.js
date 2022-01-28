@@ -2,16 +2,15 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const metaplex = require('@metaplex/js');
-const mplcore = require('@metaplex-foundation/mpl-core');
-const mpltokenmetadata = require('@metaplex-foundation/mpl-token-metadata');
+//const metaplex = require('@metaplex/js');
+//const mplcore = require('@metaplex-foundation/mpl-core');
+//const mpltokenmetadata = require('@metaplex-foundation/mpl-token-metadata');
 const fs = require('fs');
-const web3 = require('@solana/web3.js')
-const axios = require('axios');
+//const web3 = require('@solana/web3.js')
+//const axios = require('axios');
 const cliProgress = require('cli-progress');
 
-
-
+const metaplex = require("./utils/metaplex.js");
 
 app.use( bodyParser.json() );
 app.use(bodyParser.urlencoded({
@@ -48,8 +47,8 @@ app.use("/getCollectionMetaData", (req, res) => {
             }
             else if(tokenType == "mintAddress")
             {
-                getPDA(tokenAddress).then(async function(tokenPDA) {
-                    var NFTMetadata = await getNFTMetaData(tokenPDA, -1);
+                metaplex.getPDA(tokenAddress).then(async function(tokenPDA) {
+                    var NFTMetadata = await metaplex.getNFTMetaData(tokenPDA, -1);
     
                     if(NFTMetadata === undefined)
                     {
@@ -82,9 +81,9 @@ app.use("/getCollectionMetaData", (req, res) => {
     }
 })
 
-const connection = new metaplex.Connection("mainnet-beta");
-const mainNetConnection = new web3.Connection("https://api.metaplex.solana.com/");
-const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
+//const connection = new metaplex.Connection("mainnet-beta");
+//const mainNetConnection = new web3.Connection("https://api.metaplex.solana.com/");
+//const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
 const collectionDatabase = {};
 
 
@@ -92,7 +91,7 @@ function queryNewCollection(creatorTokenAddress)
 {
     return new Promise((resolve) =>
     {
-        getMintsFromCreator(creatorTokenAddress).then(function(serializedMap) {
+        metaplex.getMintsFromCreator(creatorTokenAddress).then(function(serializedMap) {
 
             console.log("Found Serialized Map for Collection!")
 
@@ -322,7 +321,7 @@ async function getMintsFromCreator(creatorTokenAddress)
 function addToCollection(tokenPDA, delay)
 {
     return new Promise((resolve) => {
-        getExternalNFTMetaData(tokenPDA, delay, 0).then(function(thismetadata) {
+        metaplex.getExternalNFTMetaData(tokenPDA, delay, 0).then(function(thismetadata) {
             //console.log("Adding " + thismetadata["name"] + " to Collection");
 
             if(thismetadata == "invalid")
