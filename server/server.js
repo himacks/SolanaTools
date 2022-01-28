@@ -2,15 +2,11 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
-//const metaplex = require('@metaplex/js');
-//const mplcore = require('@metaplex-foundation/mpl-core');
-//const mpltokenmetadata = require('@metaplex-foundation/mpl-token-metadata');
 const fs = require('fs');
-//const web3 = require('@solana/web3.js')
-//const axios = require('axios');
 const cliProgress = require('cli-progress');
-
 const metaplex = require("./utils/metaplex.js");
+const collection = require("./utils/collection.js");
+
 
 app.use( bodyParser.json() );
 app.use(bodyParser.urlencoded({
@@ -70,22 +66,11 @@ app.use("/getCollectionMetaData", (req, res) => {
             console.log("Invalid Input Given...");
         }
 
-        
-
-        
-
-
-        
-
         //res.send(returnData);
     }
 })
 
-//const connection = new metaplex.Connection("mainnet-beta");
-//const mainNetConnection = new web3.Connection("https://api.metaplex.solana.com/");
-//const METADATA_PROGRAM_ID = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s";
-const collectionDatabase = {};
-
+const collectionDatabase = [];
 
 function queryNewCollection(creatorTokenAddress)
 {
@@ -98,6 +83,8 @@ function queryNewCollection(creatorTokenAddress)
             const promises = [];
 
             const collectionSize = serializedMap.length;
+
+            const newNFTCollection = new collection.nftCollection();
 
             //const collectionSize = 100; //for testing purposes
 
@@ -125,7 +112,7 @@ function queryNewCollection(creatorTokenAddress)
                 
                 promises.push(
                     new Promise(function(resolve) {
-                        addToCollection(nftPDA, collectionSize, delay).then( function(result) {
+                        newNFTCollection.addToCollection(nftPDA, delay).then( function(result) {
                             b1.increment();
                             if(result != "invalid")
                             {
@@ -140,16 +127,6 @@ function queryNewCollection(creatorTokenAddress)
             Promise.all(promises).then((results) => {
 
                 b1.stop();
-                var collectionName = "invalid";
-
-                for(const item of results)
-                {
-                    if(item != "invalid")
-                    {
-                        collectionName = item;
-                        break;
-                    }
-                }
 
                 if(collectionSize == 0)
                 {
@@ -158,350 +135,16 @@ function queryNewCollection(creatorTokenAddress)
                 else
                 {
                     console.log("Collection Size Post-Parsing: " + successfulNFTParsed);
-                    modifyCollectionSize(collectionName, successfulNFTParsed, "overwrite");
-                    validateCollectionRarities(collectionName);
-                    saveToFile(collectionName);
+                    newNFTCollection.modifyCollectionSize(successfulNFTParsed, "overwrite");
+                    newNFTCollection.validateCollectionRarities();
+                    newNFTCollection.saveToDatabase();
+                    collectionDatabase.push(newNFTCollection);
                 }
 
                 resolve();
-
             });
         })
     })
-}
-
-function modifyCollectionSize(collectionName, inputCount, modifyType)
-{
-    if(collectionDatabase[collectionName] === undefined)
-    {
-        console.log("Error: Collection not Cataloged");
-    }
-    else if(modifyType == "reduce")
-    {   
-        collectionDatabase[collectionName]["collectionCount"] -= inputCount;
-    }
-    else if(modifyType == "add")
-    {   
-        collectionDatabase[collectionName]["collectionCount"] += inputCount;
-    }
-    else if(modifyType == "overwrite")
-    {
-        collectionDatabase[collectionName]["collectionCount"] = inputCount;
-    }
-
-
-}
-
-async function getNFTMetaData(tokenPDA, attempt) {
-
-    if(attempt === undefined) { attempt = 0; }
-
-    return new Promise(async function(resolve) {
-
-        try {
-            const mintAccInfo = await connection.getAccountInfo(tokenPDA);
-            const metadata = mpltokenmetadata.Metadata.from(new mplcore.Account(tokenPDA, mintAccInfo));
-
-            resolve(metadata);
-        }
-        catch(err)
-        {
-            console.log("Failed Attempt: "+ attempt + " - solana network request failed, retrying...");
-
-            if(attempt == -1)
-            {
-                resolve(undefined);
-            }
-            else if(attempt < 12)
-            {
-                setTimeout( async function() {
-                    resolve(await getNFTMetaData(tokenPDA, attempt+1));
-                }, 10000);
-            }
-            else
-            {
-                resolve("invalid");
-            }
-        }
-    });
-}
-
-async function getExternalNFTMetaData(tokenPDA, delay, attempt) {
-
-    return new Promise(async function(resolve) {
-
-        setTimeout( async function() {
-
-            const metadataParent = (await getNFTMetaData(tokenPDA, 0));
-
-            if(metadataParent == "invalid")
-            {
-                resolve("invalid");
-                return;
-            }
-
-            const metadata = metadataParent.data["data"];
-
-            try {
-                const metadataFromURI = (await axios.get(metadata["uri"]));
-                //console.log(metadataFromURI.data["name"] + " EXTERNAL Metadata Retrieved");
-                resolve(metadataFromURI.data); 
-            } catch (err) {
-
-
-                //resolve("invalid");
-
-                //console.log("URI: " + metadata["uri"]);
-                //console.log("Name: " + metadata["name"]);
-
-                
-                //console.log(metadata["name"] + " Failed Attempt: "+ attempt + " - axios failed, retrying...")
-                //console.log("URI: " + metadata["uri"]);
-
-                if(attempt < 5)
-                {
-                    setTimeout(async function() {
-                        resolve(await getExternalNFTMetaData(tokenPDA, 10000, attempt+1));
-                    }, 1000 * Math.floor(Math.random() * (11) + 10)) //can rewrite this in future to adjust delay based on how many retry elements are in the stack, more items = more delay range, less items = less delay range
-                }
-                else
-                {
-                    //console.log(metadata["name"] + " Not Minted");
-                    //console.log("Mint: " + metadataParent.data["mint"]);
-                    resolve("invalid");
-                }
-
-                
-
-            };
-        
-            //console.log("Got External Metadata from " + metadataFromURI["name"]);
-        }, delay);
-
-    });
-  
-  }
-  
-
-
-async function getMintsFromCreator(creatorTokenAddress)
-{
-    //console.log(creatorTokenAddress);
-
-    //const creatorPDA = await mpltokenmetadata.Metadata.getPDA(creatorTokenAddress);
-    const metaProgramPDA = new web3.PublicKey(METADATA_PROGRAM_ID);
-    //console.log(metaProgramPDA);
-
-    const filters = {
-    "encoding": "base64",
-    "filters": [
-        {
-        "memcmp": {
-            "offset": 326,
-            "bytes": creatorTokenAddress,
-        },
-        },
-        {
-        "memcmp": {
-            "offset": 358, // first creator verified position
-            "bytes": "2", // 1 as base58 string
-        },
-        },
-    ],
-    }
-    const serializedMap = await mainNetConnection.getProgramAccounts(metaProgramPDA, filters);
-
-    //console.log(serializedMap)
-
-    return serializedMap;
-
-}
-
-
-function addToCollection(tokenPDA, delay)
-{
-    return new Promise((resolve) => {
-        metaplex.getExternalNFTMetaData(tokenPDA, delay, 0).then(function(thismetadata) {
-            //console.log("Adding " + thismetadata["name"] + " to Collection");
-
-            if(thismetadata == "invalid")
-            {
-                //console.log("Too many failed attempts or NFT is not minted... probably the latter")
-                resolve("invalid");
-            }
-            else
-            {
-                collectionName = thismetadata["name"].replace(/[^a-zA-Z]+/g, '').toLowerCase();
-        
-                //console.log(collectionName);
-
-                fetchCollection(collectionName).then( () => {                    
-                    if(collectionDatabase[collectionName]["items"][thismetadata["name"]] === undefined)
-                    {
-                        collectionDatabase[collectionName]["items"][thismetadata["name"]] = thismetadata;
-                    }
-                
-                    resolve(collectionName);
-                });
-            }
-        });
-    })
-}
-
-const collectionsInStack = [];
-
-function fetchCollection(collectionName)
-{
-    return new Promise(function(resolve) {
-        if(collectionDatabase[collectionName] === undefined)
-        {
-            if(collectionsInStack.includes(collectionName))
-            {
-                //console.log("Collection is being fetched from directory. Not opening instead waiting.");
-                setTimeout(async function() {
-                    resolve(await fetchCollection(collectionName));
-                }, 1000);
-            }
-            else
-            {
-                //console.log("Reading lib directory for " + collectionName + "...")
-                collectionsInStack.push(collectionName);
-                fs.readFile('lib/' + collectionName + '.json', 'utf8' , (err, collectionData) => {
-                    if (err) 
-                    {
-                        //console.log("Couldn't find collection in lib database, creating new one.");
-
-                        createNewCollection(collectionName)
-                    }
-                    else
-                    {
-                        //console.log("Collection Already Exists in File Database. Opening file for update.")
-                        collectionDatabase[collectionName] = JSON.parse(collectionData);
-                    }
-    
-    
-                    collectionsInStack.splice(collectionsInStack.indexOf(collectionName), 1);
-                    resolve();
-                });
-            }
-        }
-        else
-        {
-            //console.log("Collection exists in var collectionDatabase. No further action needed.");
-
-            resolve();
-        }
-    });
-}
-
-function validateCollectionRarities(collectionName)
-{
-    if(collectionDatabase[collectionName] === undefined)
-    {
-        console.log("Error: Collection not Cataloged");
-    }
-    else
-    {   
-        //console.log("Parsing Attributes...");
-
-        var collectionSize = collectionDatabase[collectionName]["collectionCount"];
-
-        var attributeDictionary = {};
-
-        for(const [key, value] of Object.entries(collectionDatabase[collectionName]["items"]))
-        {
-            const attributeList = value["attributes"];
-
-            for(const attribute of attributeList)
-            {
-                const traitType = attribute["trait_type"];
-                const traitValue = attribute["value"];
-
-                //console.log("Trait Type: " + traitType);
-                //console.log("Trait Value: " + traitValue);
-                
-
-                if(attributeDictionary[traitType] === undefined)
-                {   
-                    attributeDictionary[traitType] = {"Items": {}};
-                }
-
-                if(attributeDictionary[traitType]["Items"][traitValue] === undefined)
-                {
-                    attributeDictionary[traitType]["Items"][traitValue] = {"Count": 1, "Rarity": collectionSize};
-                }
-                else
-                {
-                    attributeDictionary[traitType]["Items"][traitValue]["Count"]++;
-
-                    attributeDictionary[traitType]["Items"][traitValue]["Rarity"] = attributeDictionary[traitType]["Items"][traitValue]["Count"] / collectionSize;
-                }
-            }
-        }
-
-        collectionDatabase[collectionName]["attributeDictionary"] = attributeDictionary;
-
-        for(const [key, value] of Object.entries(collectionDatabase[collectionName]["items"]))
-        {
-            const attributeList = value["attributes"];
-
-            var masterRarity = 1;
-
-            for(const attribute of attributeList)
-            {
-                const traitType = attribute["trait_type"];
-                const traitValue = attribute["value"];
-                const traitValueRarity = attributeDictionary[traitType]["Items"][traitValue]["Rarity"];
-                masterRarity *= traitValueRarity;
-            }
-
-            value["masterRarity"] = masterRarity;
-        }
-
-    }
-}
-
-
-function saveToFile(collectionName)
-{
-    if(collectionDatabase[collectionName] === undefined)
-    {
-        console.log("Error: Collection not Cataloged");
-    }
-    else
-    {
-        if (!fs.existsSync('./lib')){
-            fs.mkdirSync('./lib');
-        }
-
-        fs.writeFile("lib/" + collectionName +".json" , JSON.stringify(collectionDatabase[collectionName]), function(err) {
-            if(err) {
-                console.log(err);
-            }
-            console.log("Success: File was saved as " + collectionName + ".json");
-    
-        }); 
-    }
-
-    
-}
-
-
-function createNewCollection(collectionName)
-{
-    collectionData = {
-            "name": collectionName,
-            "collectionCount": 0,
-            "attributeDictionary": {
-                /*
-                "attributeName (eg. Background)": {"possibleValues": {"Red": {"Count": 5, "Rarity": 0.05}, "None": {"Count": 95, "Rarity": 0.95}}}}
-                */
-            }
-            ,
-            "items": {}
-        };
-
-    collectionDatabase[collectionName] = collectionData;
 }
 
 function testSort(collectionName)
@@ -530,12 +173,6 @@ function testSort(collectionName)
         }
     })
 }
-
-async function getPDA(tokenAddress)
-{
-    return (await mpltokenmetadata.Metadata.getPDA(tokenAddress));
-}
-
 
 
 
@@ -580,5 +217,16 @@ fetchCollection("spacerunnersxnbachampions", 10000).then( () => {
 });
 
 
-*/
 
+
+
+var testCollection = new collection.nftCollection();
+
+metaplex.getPDA("GGEikoeYT143nYd7YMGGMapBuZERsG3vUS61i8td1s93").then( function(tokenPDA) {
+    testCollection.addToCollection(tokenPDA, 0).then( () => {
+        console.log(JSON.stringify(testCollection));
+    })
+
+})
+
+*/
