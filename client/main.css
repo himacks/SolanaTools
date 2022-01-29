@@ -1,0 +1,15 @@
+
+.utility {
+    margin: 0 0 20px 0;
+    padding: 10px;
+    border: 1px solid black;
+    width: min-content;
+}
+
+.utilityItem {
+    display: inline-block;
+}
+
+#getCollectionsBtn {
+    display: block;
+}

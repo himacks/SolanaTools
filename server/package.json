@@ -27,6 +27,6 @@
     "express": "^4.17.2",
     "fs": "^0.0.1-security",
     "nodemon": "^2.0.15",
-    "request": "^2.88.2"
+    "python-shell": "^3.0.1"
   }
 }

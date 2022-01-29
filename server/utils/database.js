@@ -1,6 +1,8 @@
 const cliProgress = require('cli-progress');
-const metaplex = require("./utils/metaplex.js");
-const collection = require("./utils/collection.js");
+const metaplex = require("./metaplex.js");
+const { nftCollection } = require('./collection.js');
+const fs = require('fs');
+
 
 function queryNewCollection(creatorTokenAddress)
 {
@@ -14,7 +16,7 @@ function queryNewCollection(creatorTokenAddress)
 
             const collectionSize = serializedMap.length;
 
-            const newNFTCollection = new collection.nftCollection();
+            const newNFTCollection = new nftCollection();
 
             //const collectionSize = 100; //for testing purposes
 
@@ -68,6 +70,7 @@ function queryNewCollection(creatorTokenAddress)
                     console.log("Collection Size Post-Parsing: " + successfulNFTParsed);
                     newNFTCollection.modifyCollectionSize(successfulNFTParsed, "overwrite");
                     newNFTCollection.validateCollectionRarities();
+                    newNFTCollection.sortByRarity();
                     newNFTCollection.saveToDatabase();
                     resolve(newNFTCollection);
                 }
@@ -78,4 +81,34 @@ function queryNewCollection(creatorTokenAddress)
 }
 
 
-module.exports = { queryNewCollection : queryNewCollection };
+async function getAvailableCollections()
+{
+    return new Promise((resolve) => {
+        fs.readdir("./lib/", function (err, files) {
+
+            var collections = [];
+    
+            var count = 0;
+    
+            files.forEach( (file) => {
+    
+                const collectionName = file.replace(".json", "");
+    
+                collections.push(collectionName);
+
+                count++;
+    
+                if(count === files.length)
+                {
+                    resolve(collections);
+                }
+            });
+        });
+    });
+    
+
+
+}
+
+
+module.exports = { queryNewCollection : queryNewCollection, getAvailableCollections : getAvailableCollections };

@@ -5,14 +5,22 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Document</title>
+        <link rel="stylesheet" href="main.css">
+
     </head>
     <body>
-        <input id="tokenInput" placeholder="Token Address"></input>
-        <select name="Token Address Type" id="tokenType">
-            <option value="mintAddress">Mint Address</option>
-            <option value="creatorAddress">Creator Address</option>
-          </select>
-        <button id="sendMetaDataBtn">Get Collection MetaData!</button>
+        <div class="utility" id="queryCollection">
+            <input id="tokenInput" placeholder="Token Address"></input>
+            <select name="Token Address Type" id="tokenType">
+                <option class="utilityItem" value="mintAddress">Mint Address</option>
+                <option class="utilityItem" value="creatorAddress">Creator Address</option>
+              </select>
+            <button id="sendMetaDataBtn">Get Collection MetaData!</button>
+        </div>
+        <div class="utility" id="getCollections">
+            <button class="utilityItem" id="getCollectionsBtn">Get Database Collections!</button>
+            <textarea class="utilityItem" id="availableCollections"></textarea>
+        </div>
     </body>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
     <script src="app.js"></script>

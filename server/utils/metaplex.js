@@ -24,12 +24,14 @@ async function getNFTMetaData(tokenPDA, attempt) {
         try {
             const mintAccInfo = await connection.getAccountInfo(tokenPDA);
             const metadata = mpltokenmetadata.Metadata.from(new mplcore.Account(tokenPDA, mintAccInfo));
+            //console.log("Metadata Retrieved");
 
             resolve(metadata);
         }
         catch(err)
         {
-            console.log("Failed Attempt: "+ attempt + " - solana network request failed, retrying...");
+            //console.log("Failed Attempt: "+ attempt + " - solana network request failed, retrying...");
+
 
             if(attempt == -1)
             {
@@ -63,10 +65,10 @@ async function getExternalNFTMetaData(tokenPDA, delay, attempt) {
                 return;
             }
 
-            const metadata = metadataParent.data["data"];
+            const metadata = metadataParent.data.data;
 
             try {
-                const metadataFromURI = (await axios.get(metadata["uri"]));
+                const metadataFromURI = (await axios.get(metadata.uri));
                 //console.log(metadataFromURI.data["name"] + " EXTERNAL Metadata Retrieved");
                 resolve(metadataFromURI.data); 
             } catch (err) {

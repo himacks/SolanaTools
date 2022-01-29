@@ -2,17 +2,19 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const fs = require('fs');
 const metaplex = require("./utils/metaplex.js");
 const database = require("./utils/database.js");
+const axios = require('axios');
+const { PythonShell } = require('python-shell');
+
 
 const collectionDatabase = [];
-
 
 app.use( bodyParser.json() );
 app.use(bodyParser.urlencoded({
     extended: true
 }));
+
 app.use(cors());
 
 app.listen(3000, function () {
@@ -23,7 +25,7 @@ app.get('/', (req, res) => {
     res.send("Welcome to the server");
 })
 
-app.use("/getCollectionMetaData", (req, res) => {
+app.use("/queryCollectionMetaData", (req, res) => {
     if (req.method == 'POST') {
 
         var tokenAddress = req.body.tokenAddress;
@@ -59,6 +61,7 @@ app.use("/getCollectionMetaData", (req, res) => {
                     
                         database.queryNewCollection(creatorTokenAddress).then((newNFTCollection) => {
                             collectionDatabase.push(newNFTCollection);
+                            res.send({"collectionName" : newNFTCollection.collectionName});
                         });
                     }
                 });
@@ -69,39 +72,37 @@ app.use("/getCollectionMetaData", (req, res) => {
             console.log("Invalid Input Given...");
         }
 
-        //res.send(returnData);
     }
 })
 
-
-function testSort(collectionName)
-{
-    fs.readFile('lib/' + collectionName + '.json', 'utf8' , (err, collectionData) => {
-        if (err) {
-            console.log("Collection is not saved to file.");
-            return
-        }
-        else
-        {
-            var collectionData = JSON.parse(collectionData);
-            var nftList = Object.values(collectionData["items"]);
-
-            nftList.sort(function(a, b) { 
-                return a.masterRarity - b.masterRarity;
-            })
-            
-            fs.writeFile("lib/testing.json" , JSON.stringify(nftList), function(err) {
-                if(err) {
-                    console.log(err);
-                }
-                console.log("Success: File was saved as testing.json");
-        
-            }); 
-        }
-    })
-}
+app.use("/getAvailableCollections", (req, res) => {
+    if (req.method == 'GET') {
+        database.getAvailableCollections().then( (collectionList) => {
+            res.send({ "availableCollections" : collectionList });
+        });
+    }
+});
 
 
+var collection = "space_runners";
+
+var skip = 0;
+
+var urlLink = 'https://api-mainnet.magiceden.io/rpc/getListedNFTsByQuery?q={"$match":{"collectionSymbol":"' + collection + '"},"$sort":{"takerAmount":1,"createdAt":-1},"$skip":' + skip + '}'
+
+let options = {
+    mode: 'text',
+    pythonOptions: ['-u'], // get print results in real-time
+      scriptPath: 'python', //If you are having python_test.py script in same folder, then it's optional.
+    args: [urlLink] //An argument which can be accessed in the script using sys.argv[1]
+};
+
+PythonShell.run('requestData.py', options, function (err, result){
+    if (err) throw err;
+    // result is an array consisting of messages collected
+    //during execution of script.
+    console.log('result: ', result.toString());
+});
 
 
 /*
@@ -147,13 +148,16 @@ fetchCollection("spacerunnersxnbachampions", 10000).then( () => {
 
 
 
-var testCollection = new collection.nftCollection();
+var testCollection = new nftCollection();
 
-metaplex.getPDA("GGEikoeYT143nYd7YMGGMapBuZERsG3vUS61i8td1s93").then( function(tokenPDA) {
-    testCollection.addToCollection(tokenPDA, 0).then( () => {
-        console.log(JSON.stringify(testCollection));
-    })
+testCollection.collectionName = "boryokumonkeyz";
 
-})
+testCollection.fetchSelfFromDatabase().then( () => {
+    testCollection.sort();
+    setTimeout( () => {
+        testCollection.saveToDatabase();
+    }, 1000);
+});
+
 
 */
