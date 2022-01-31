@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const metaplex = require("./utils/metaplex.js");
 const database = require("./utils/database.js");
+const { nftCollection, nft } = require('./utils/nftcollection.js');
 const axios = require('axios');
 const { PythonShell } = require('python-shell');
 
@@ -47,7 +48,7 @@ app.use("/queryCollectionMetaData", (req, res) => {
             else if(tokenType == "mintAddress")
             {
                 metaplex.getPDA(tokenAddress).then(async function(tokenPDA) {
-                    var NFTMetadata = await metaplex.getNFTMetaData(tokenPDA, -1);
+                    var NFTMetadata = await metaplex.getNFTChainMetaData(tokenPDA, -1);
     
                     if(NFTMetadata === undefined)
                     {
@@ -55,7 +56,7 @@ app.use("/queryCollectionMetaData", (req, res) => {
                     }
                     else
                     {
-                        var creatorTokenAddress = NFTMetadata.data["data"]["creators"][0]["address"]
+                        var creatorTokenAddress = NFTMetadata["data"]["creators"][0]["address"]
     
                         console.log("Creator Found from Mint Token Input...");
                     
@@ -83,6 +84,31 @@ app.use("/getAvailableCollections", (req, res) => {
     }
 });
 
+const tokenMint = "4Y26L5Sr7G4swBeKr59EfrGWG3DUbUVeDmAZboAVpZiV";
+
+metaplex.getTokenAddressesFromMint(tokenMint).then( async (tokenAccounts) => {
+    for(const item of tokenAccounts)
+    {
+        //console.log(item.account.data); // same thing as calling getAccountData and getting the ["data"] of the returned result
+        
+        console.log(item.pubkey.toString());
+    }
+});
+
+
+
+/*
+
+const test = new nftCollection();
+
+test.collectionName  = "boryokumonkeyz";
+
+test.fetchSelfFromDatabase().then( () => {
+    setTimeout( () => {
+        //console.log(test);
+    }, 2000);
+});
+
 
 var collection = "space_runners";
 
@@ -98,12 +124,18 @@ let options = {
 };
 
 PythonShell.run('requestData.py', options, function (err, result){
-    if (err) throw err;
+    if (err) {
+        console.error(err);
+    }
+    else
+    {
+        console.log('result: ', result.toString());
+    }
     // result is an array consisting of messages collected
     //during execution of script.
-    console.log('result: ', result.toString());
 });
 
+*/
 
 /*
 

@@ -1,6 +1,6 @@
 const cliProgress = require('cli-progress');
 const metaplex = require("./metaplex.js");
-const { nftCollection } = require('./collection.js');
+const { nftCollection } = require('./nftcollection.js');
 const fs = require('fs');
 
 
@@ -71,7 +71,7 @@ function queryNewCollection(creatorTokenAddress)
                     newNFTCollection.modifyCollectionSize(successfulNFTParsed, "overwrite");
                     newNFTCollection.validateCollectionRarities();
                     newNFTCollection.sortByRarity();
-                    newNFTCollection.saveToDatabase();
+                    saveToDatabase(newNFTCollection);
                     resolve(newNFTCollection);
                 }
 
@@ -80,10 +80,29 @@ function queryNewCollection(creatorTokenAddress)
     })
 }
 
+let saveToDatabase = (nftCollection) =>
+    {
+        if (!fs.existsSync('./lib')){
+            fs.mkdirSync('./lib');
+        }
+
+        fs.writeFile("./lib/" + nftCollection.collectionName +".json" , JSON.stringify(nftCollection), (err) => {
+            if(err) {
+                console.log(err);
+            }
+            console.log("Success: File was saved as " + nftCollection.collectionName + ".json");
+        });   
+    }
+
 
 async function getAvailableCollections()
 {
     return new Promise((resolve) => {
+
+        if (!fs.existsSync('./lib')){
+            fs.mkdirSync('./lib');
+        }
+
         fs.readdir("./lib/", function (err, files) {
 
             var collections = [];

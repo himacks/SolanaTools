@@ -1,18 +1,18 @@
 const metaplex = require("./metaplex.js");
 const fs = require('fs');
 const e = require("express");
-const { Console } = require("console");
 
 class nftCollection {
 
     constructor() {
         this.collectionName = "";
         this.collectionSize = ""; 
-        this.attributeDictionary = {};
-        this.items = [];
+        this.updateAuthority = "";
         this.fetched = false;
         this.beingFetched = false;
         this.masterRaritiesAdded = false;
+        this.attributeDictionary = {};
+        this.items = [];
     }
 
     modifyCollectionSize = (inputCount, modifyType) =>
@@ -34,31 +34,28 @@ class nftCollection {
     addToCollection = (tokenPDA, delay) =>
     {
         return new Promise( (resolve) => {
-            metaplex.getExternalNFTMetaData(tokenPDA, delay, 0).then((nftObject) => {
-                //console.log("Adding " + nftObject["name"] + " to Collection");
 
-                if(nftObject == "invalid")
-                {
-                    //console.log("Too many failed attempts or NFT is not minted... probably the latter")
-                    resolve("invalid");
-                }
-                else
-                {
-                    const parsedCollectionName = nftObject.name.replace(/[^a-zA-Z]+/g, '').toLowerCase();
+            const nftItem = new nft();
 
-                    if(this.collectionName != parsedCollectionName)
+            nftItem.getBlockchainMetadata(tokenPDA, delay).then((success) => {
+                if(success)
+                {
+                    if(this.collectionName == "")
                     {
-                        this.collectionName = parsedCollectionName;
+                        this.collectionName = nftItem.name.replace(/[^a-zA-Z]+/g, '').toLowerCase();
                     }
-            
-                    //console.log(parsedCollectionName);
+
+                    if(this.updateAuthority == "")
+                    {
+                        this.updateAuthority = nftItem.updateAuthority;
+                    }
 
                     this.fetchSelfFromDatabase().then( () => {                    
-                        this.contains(nftObject.name).then( (result) => 
+                        this.collectionContains(nftItem).then( (contained) => 
                         {
-                            if(!result)
-                            {
-                                this.items.push(nftObject);
+                            if(!contained)
+                            {                                
+                                this.items.push(nftItem);
                             }
 
                             resolve();
@@ -67,11 +64,16 @@ class nftCollection {
                         //console.log("Adding " + thismetadata["name"] + " to Collection");
                     });
                 }
+                else
+                {
+                    resolve("invalid");
+                }
+
             });
-        })
+        });
     }
 
-    contains(nftName)
+    collectionContains(nftName)
     {
 
         let count = 0;
@@ -91,6 +93,7 @@ class nftCollection {
                     if(nftItem.name == nftName)
                     {
                         resolve(true);
+                        break;
                     }
                     else if(count === currentCollectionLength)
                     {
@@ -230,11 +233,25 @@ class nftCollection {
                             //console.log("Collection Already Exists in File Database. Opening file for update.")
                             const collectionData = JSON.parse(collectionJSONData);
 
+                            //console.log(collectionData);
+
                             this.collectionName = collectionData.collectionName;
                             this.collectionSize = collectionData.collectionSize;
                             this.attributeDictionary = collectionData.attributeDictionary;
                             this.masterRaritiesAdded = collectionData.masterRaritiesAdded;
-                            this.items = collectionData.items;                  
+
+                            for(const nftDictItem of collectionData.items)
+                            {
+                                const nftItem = new nft();
+
+                                nftItem.importFromDatabase(nftDictItem);
+
+                                this.items.push(nftItem);
+                            }                  
+                        }
+                        else
+                        {
+                            //console.log(err);
                         }
                         
                         this.fetched = true;
@@ -251,20 +268,73 @@ class nftCollection {
             }
         });
     }
-
-    saveToDatabase = () =>
-    {
-        if (!fs.existsSync('./lib')){
-            fs.mkdirSync('./lib');
-        }
-
-        fs.writeFile("./lib/" + this.collectionName +".json" , JSON.stringify(this), (err) => {
-            if(err) {
-                console.log(err);
-            }
-            console.log("Success: File was saved as " + this.collectionName + ".json");
-        });   
-    }
 }
 
-module.exports = { nftCollection : nftCollection};
+class nft {
+    constructor() {
+        this.name = "";
+        this.mintKey = "";
+        this.updateAuthority = "";
+        this.uri = "";
+        this.symbol = "";
+        this.attributes = [];
+        this.collection = {};
+        this.properties = {};
+        this.masterRarity = 1;
+        this.metaCollection = {};
+    }
+
+    importChainMetaData = (metadata) => {
+        this.mintKey = metadata.mint;
+        this.metaCollection = metadata.collection;
+        this.uri = metadata.data.uri;
+        this.updateAuthority = metadata.updateAuthority;
+    }
+
+    importExternalMetaData = (metadata) => {
+        this.name = metadata.name;
+        this.symbol = metadata.symbol;
+        this.attributes = metadata.attributes;
+        this.collection = metadata.collection;
+        this.properties = metadata.properties;
+    }
+
+    importFromDatabase = (metadata) => {
+        this.mintKey = metadata.mintKey;
+        this.metaCollection = metadata.metaCollection;
+        this.uri = metadata.uri;
+        this.updateAuthority = metadata.updateAuthority;
+        this.name = metadata.name;
+        this.symbol = metadata.symbol;
+        this.attributes = metadata.attributes;
+        this.collection = metadata.collection;
+        this.properties = metadata.properties;
+    }
+
+    getBlockchainMetadata(tokenPDA, delay)
+    {
+        return new Promise( (resolve) => {
+            metaplex.getAllNFTMetaData(tokenPDA, delay, 0).then((allMetadata) => {
+                if(allMetadata == "invalid")
+                {
+                    resolve(false);
+                }
+                else
+                {
+                    const chainMetadata = allMetadata.chainMetaData;
+                    const externalMetadata = allMetadata.externalMetadata;
+
+                    this.importExternalMetaData(externalMetadata);
+                    this.importChainMetaData(chainMetadata);
+
+                    resolve(true);
+                }
+            });
+        });
+
+    }
+
+
+}
+
+module.exports = { nftCollection : nftCollection, nft : nft};
