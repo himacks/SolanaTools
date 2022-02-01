@@ -7,6 +7,8 @@ const database = require("./utils/database.js");
 const { nftCollection, nft } = require('./utils/nftcollection.js');
 const axios = require('axios');
 const { PythonShell } = require('python-shell');
+const web3 = require('@solana/web3.js')
+const metaplex2 = require('@metaplex/js');
 
 
 const collectionDatabase = [];
@@ -84,31 +86,51 @@ app.use("/getAvailableCollections", (req, res) => {
     }
 });
 
-const tokenMint = "4Y26L5Sr7G4swBeKr59EfrGWG3DUbUVeDmAZboAVpZiV";
+const tokenMint = "47svtsENuLUV5JbgPsV9QeccbDSaWBbHZZHU7ifediaR";
+const connection = new metaplex2.Connection("mainnet-beta");
 
 metaplex.getTokenAddressesFromMint(tokenMint).then( async (tokenAccounts) => {
     for(const item of tokenAccounts)
     {
         //console.log(item.account.data); // same thing as calling getAccountData and getting the ["data"] of the returned result
         
-        console.log(item.pubkey.toString());
+        connection.getConfirmedSignaturesForAddress2(item.pubkey).then( (result) => {
+            for(const item of result)
+            {
+                connection.getTransaction(item.signature).then( (result) => {
+                    //console.log(JSON.stringify(result, null, "\t"));
+                    console.log(result.transaction.message.instructions[0].programIdIndex);
+                    if(result.transaction.message.instructions[0].programIdIndex === 12)
+                    {
+                        console.log("Confirmed Sale");
+                        console.log(result);
+                    }
+                    else if(result.transaction.message.instructions[0].programIdIndex === 9)
+                    {
+                        console.log("Mint");
+                        console.log(result);
+                    }
+                });
+            }
+
+        }); // THESE ARE THE TOKEN ADDRESSES
     }
 });
 
 
-
 /*
+
 
 const test = new nftCollection();
 
-test.collectionName  = "boryokumonkeyz";
+test.collectionName  = "presidentialape";
 
 test.fetchSelfFromDatabase().then( () => {
-    setTimeout( () => {
-        //console.log(test);
-    }, 2000);
+    test.sortByRarity();
+    database.saveToDatabase(test);
 });
 
+/*
 
 var collection = "space_runners";
 

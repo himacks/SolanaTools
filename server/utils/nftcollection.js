@@ -52,11 +52,8 @@ class nftCollection {
 
                     this.fetchSelfFromDatabase().then( () => {                    
                         this.collectionContains(nftItem).then( (contained) => 
-                        {
-                            if(!contained)
-                            {                                
-                                this.items.push(nftItem);
-                            }
+                        {                             
+                            this.items.push(nftItem);
 
                             resolve();
 
@@ -147,6 +144,11 @@ class nftCollection {
         else
         {
             console.error("Collection Rarities not added.");
+        }
+
+        for(let i = 1; i<=this.collectionSize; i++)
+        {
+            this.items[i-1].setRank("" + i + "/" + this.collectionSize);
         }
     }
 
@@ -239,15 +241,7 @@ class nftCollection {
                             this.collectionSize = collectionData.collectionSize;
                             this.attributeDictionary = collectionData.attributeDictionary;
                             this.masterRaritiesAdded = collectionData.masterRaritiesAdded;
-
-                            for(const nftDictItem of collectionData.items)
-                            {
-                                const nftItem = new nft();
-
-                                nftItem.importFromDatabase(nftDictItem);
-
-                                this.items.push(nftItem);
-                            }                  
+                            this.items = [];               
                         }
                         else
                         {
@@ -282,6 +276,11 @@ class nft {
         this.properties = {};
         this.masterRarity = 1;
         this.metaCollection = {};
+        this.rank = "unranked";
+    }
+
+    setRank = (rankToSet) => {
+        this.rank = rankToSet;
     }
 
     importChainMetaData = (metadata) => {
@@ -309,6 +308,7 @@ class nft {
         this.attributes = metadata.attributes;
         this.collection = metadata.collection;
         this.properties = metadata.properties;
+        this.rank = metadata.rank;
     }
 
     getBlockchainMetadata(tokenPDA, delay)
