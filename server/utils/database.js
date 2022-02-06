@@ -18,7 +18,7 @@ function queryNewCollection(creatorTokenAddress)
 
             const newNFTCollection = new nftCollection();
 
-            //const collectionSize = 100; //for testing purposes
+            //const collectionSize = 20; //for testing purposes
 
             var delay = 0; //ms
 

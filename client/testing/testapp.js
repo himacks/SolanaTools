@@ -40,7 +40,7 @@ function insertCollectionsBox(collectionName)
 function postData(data, extension)
 {
     $.ajax({
-        url: 'http://localhost:3000' + extension,
+        url: 'http://localhost:4000' + extension,
         data: data,
         type: 'POST',
         success: function( data, status, xhttp) {
@@ -55,7 +55,7 @@ function getAvailableCollections()
 {
     return new Promise( (resolve) => {
         $.ajax({
-            url: 'http://localhost:3000/getAvailableCollections',
+            url: 'http://localhost:4000/getAvailableCollections',
             type: 'GET',
             success: function( data, status, xhttp) {
                 // data will be true or false if you returned a json bool

@@ -5,15 +5,6 @@ const web3 = require('@solana/web3.js')
 const axios = require('axios');
 const spl = require('@solana/spl-token');
 const borsh = require('borsh');
-const { Keypair,
-    AccountMeta,
-    Connection,
-    LAMPORTS_PER_SOL,
-    PublicKey,
-    SystemProgram,
-    Transaction,
-    TransactionInstruction,
-    sendAndConfirmTransaction } = require('@solana/web3.js')
 
 
 
@@ -97,7 +88,7 @@ async function getAllNFTMetaData(tokenPDA, delay, attempt) {
                 console.log(metadataDataData["name"] + " Failed Attempt: "+ attempt + " - axios failed, retrying...")
                 console.log("URI: " + metadataDataData["uri"]);
 
-                if(attempt < 5)
+                if(attempt < 10)
                 {
                     setTimeout(async function() {
                         resolve(await getAllNFTMetaData(tokenPDA, 10000, attempt+1));
@@ -109,8 +100,6 @@ async function getAllNFTMetaData(tokenPDA, delay, attempt) {
                     //console.log("Mint: " + metadataParent.data["mint"]);
                     resolve("invalid");
                 }
-
-                
 
             };
         
@@ -154,8 +143,9 @@ async function getMintsFromCreator(creatorTokenAddress)
 
 }
 
-async function getTokenAddressesFromMint(mintTokenAddress)
+async function getTokenAddresses(mintTokenAddress)
 {
+
 
     const filters = {
         "encoding": "base64",
@@ -178,8 +168,8 @@ async function getTokenAddressesFromMint(mintTokenAddress)
     
 }
 
-async function getAccountData(pubkey) {
-    let nameAccount = await mainNetConnection.getAccountInfo(pubkey, 'processed');
+async function getAccountData(tokenPDA) {
+    let nameAccount = await mainNetConnection.getAccountInfo(tokenPDA, 'processed');
 
     return nameAccount;
 }
@@ -213,5 +203,167 @@ async function deserializeData(serializedData)
     return borsh.deserializeUnchecked(dataSchema, AccoundData, serializedData)
 }
 
+function truncateDecimals(number, digits) {
+    var multiplier = Math.pow(10, digits),
+        adjustedNum = number * multiplier,
+        truncatedNum = Math[adjustedNum < 0 ? 'ceil' : 'floor'](adjustedNum);
 
-module.exports = { getMintsFromCreator: getMintsFromCreator, getAllNFTMetaData: getAllNFTMetaData, getNFTChainMetaData: getNFTChainMetaData, getPDA: getPDA, getTokenAddressesFromMint : getTokenAddressesFromMint, getAccountData : getAccountData, deserializeData : deserializeData};
+    return truncatedNum / multiplier;
+};
+
+async function getNFTSales(tokenMintAddress)
+{
+
+    const accountKeysDeterminingSale = [
+        "2NZukH2TXpcuZP4htiuT8CFxcaQSWzkkR6kepSWnZ24Q",
+        "GUfCR9mK6azb9vcpsxgXyj7XRPAKJd4KMHTTVvtncGgp"
+    ]
+
+    return new Promise( (resolve) => {
+        this.getTokenAddresses(tokenMintAddress).then( async (tokenAccounts) => {
+
+            var transactionListSize = 0;
+            var validTransactions = 0;
+            var invalidTransactions = 0;
+            const dataList = [];
+
+
+            for(const item of tokenAccounts)
+            {
+
+                //console.log(item.account.data); // same thing as calling getAccountData and getting the ["data"] of the returned result
+                
+                connection.getSignaturesForAddress(item.pubkey).then( (signatureList) => {
+    
+
+                    transactionListSize += signatureList.length;
+                    
+
+                    for(const item of signatureList)
+                    {
+                        connection.getTransaction(item.signature).then( (result) => {
+
+    
+                            if(result.meta.status.Ok !== undefined)
+                            {
+                                //console.log(result.transaction.message.instructions[0].programIdIndex);
+                                
+                                /*
+                                
+                                var validTransaction = true;
+                                Alternative Method for finding valid transactions
+        
+                                const transactionKeys = JSON.parse(JSON.stringify(result.transaction.message.accountKeys));
+                                //console.log(transactionKeys);
+                                
+                                for(validAccountKey of accountKeysDeterminingSale)
+                                {
+                                    if( ! ((transactionKeys).includes(validAccountKey)))
+                                    {
+                                        validTransaction = false;
+                                    }
+                                }
+        
+                                if(validTransaction)
+                                {
+        
+        
+                                    
+                                }
+        
+                                */
+        
+                                var keys = Object.keys(result.transaction.message.header);
+                                var transactionHeader = [];
+                                keys.forEach(function(key){
+                                    transactionHeader.push(result.transaction.message.header[key]);
+                                });
+        
+                                //console.log(transactionHeader);
+                                if(compareArrays(transactionHeader, [0,5,1]))
+                                {
+                                    const postBalances = result.meta.postBalances;
+                                    const preBalances = result.meta.preBalances;
+                                    const blockTime = result.blockTime;
+                                    var date = new Date(blockTime * 1000);
+
+                                    //console.log(JSON.stringify(result, null, "\t"));
+
+                                    const transactionBlockChainFee = result.meta.fee;
+                                    const transactionSignature = result.transaction.signatures[0];
+                                    //const transactionSaleAmt = (preBalances[0] - postBalances[0] - transactionBlockChainFee) / 1000000000;
+
+                                    let transactionSaleAmt = 0;
+                                    for(let i = 0; i<postBalances.length; i++)
+                                    {
+                                        if(transactionSaleAmt < Math.abs(preBalances[i] - postBalances[i]))
+                                        {
+                                            transactionSaleAmt = Math.abs(preBalances[i] - postBalances[i])
+                                        }
+                                    }
+
+                                    //console.log(transactionSignature);
+        
+                                    //console.log(transactionSignature);
+        
+                                    //console.log(date);
+        
+                                    //console.log(transactionSaleAmt);
+    
+                                    const data = {"transactionBlockChainFee" : transactionBlockChainFee, "transactionSignature": transactionSignature, "transactionSaleAmt": truncateDecimals(transactionSaleAmt / 1000000000, 4), "transactionDate": date};
+    
+                                    //console.log(data);
+    
+                                    dataList.push(data);
+                                    //console.log(data);
+                                    validTransactions++;
+
+                                }
+                                else
+                                {
+                                    invalidTransactions++;
+                                }
+
+                            }
+
+                            //console.log("Invalid Transactions: " + invalidTransactions);
+                            //console.log("Valid Transactions: " + validTransactions);
+                            //console.log("Total Transactions: " + transactionListSize);
+
+                            if(invalidTransactions + validTransactions == transactionListSize - 1)
+                            {
+                                resolve(dataList);
+                                //console.log("resolved");
+                            }
+
+                            
+                        });
+
+                    }
+        
+                }); // THESE ARE THE TOKEN ADDRESSES
+            }
+        });
+    });
+
+    
+}
+
+function compareArrays(array1, array2)
+{
+    const array2Sorted = array2.slice().sort();
+    return (array1.length === array2.length && array1.slice().sort().every(function(value, index) {
+        return value === array2Sorted[index];
+    }));
+}
+
+
+module.exports = { getMintsFromCreator: getMintsFromCreator, 
+                   getAllNFTMetaData: getAllNFTMetaData, 
+                   getNFTChainMetaData: getNFTChainMetaData, 
+                   getPDA: getPDA, 
+                   getTokenAddresses : getTokenAddresses, 
+                   getAccountData : getAccountData, 
+                   deserializeData : deserializeData,
+                   getNFTSales : getNFTSales
+                };

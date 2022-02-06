@@ -33,9 +33,10 @@ class nftCollection {
 
     addToCollection = (tokenPDA, delay) =>
     {
-        return new Promise( (resolve) => {
 
-            const nftItem = new nft();
+        const nftItem = new nft();
+
+        return new Promise( (resolve) => {
 
             nftItem.getBlockchainMetadata(tokenPDA, delay).then((success) => {
                 if(success)
@@ -51,13 +52,11 @@ class nftCollection {
                     }
 
                     this.fetchSelfFromDatabase().then( () => {                    
-                        this.collectionContains(nftItem).then( (contained) => 
-                        {                             
-                            this.items.push(nftItem);
+              
+                        this.items.push(nftItem);
 
-                            resolve();
+                        resolve();
 
-                        })
                         //console.log("Adding " + thismetadata["name"] + " to Collection");
                     });
                 }
@@ -239,9 +238,11 @@ class nftCollection {
 
                             this.collectionName = collectionData.collectionName;
                             this.collectionSize = collectionData.collectionSize;
-                            this.attributeDictionary = collectionData.attributeDictionary;
+                            //this.attributeDictionary = collectionData.attributeDictionary;
+                            this.attributeDictionary = {};
                             this.masterRaritiesAdded = collectionData.masterRaritiesAdded;
-                            this.items = [];               
+                            this.items = [];
+                            //this.items = collectionData.items;
                         }
                         else
                         {
@@ -311,10 +312,9 @@ class nft {
         this.rank = metadata.rank;
     }
 
-    getBlockchainMetadata(tokenPDA, delay)
-    {
+    getBlockchainMetadata = (tokenPDA, delay) => {
         return new Promise( (resolve) => {
-            metaplex.getAllNFTMetaData(tokenPDA, delay, 0).then((allMetadata) => {
+            metaplex.getAllNFTMetaData(tokenPDA, delay, 0).then( (allMetadata) => {
                 if(allMetadata == "invalid")
                 {
                     resolve(false);
@@ -331,10 +331,7 @@ class nft {
                 }
             });
         });
-
     }
-
-
 }
 
 module.exports = { nftCollection : nftCollection, nft : nft};

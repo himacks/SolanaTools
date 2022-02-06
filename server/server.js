@@ -7,8 +7,6 @@ const database = require("./utils/database.js");
 const { nftCollection, nft } = require('./utils/nftcollection.js');
 const axios = require('axios');
 const { PythonShell } = require('python-shell');
-const web3 = require('@solana/web3.js')
-const metaplex2 = require('@metaplex/js');
 
 
 const collectionDatabase = [];
@@ -20,7 +18,7 @@ app.use(bodyParser.urlencoded({
 
 app.use(cors());
 
-app.listen(3000, function () {
+app.listen(4000, function () {
     console.log('server is running');
 })
 
@@ -86,51 +84,34 @@ app.use("/getAvailableCollections", (req, res) => {
     }
 });
 
-const tokenMint = "47svtsENuLUV5JbgPsV9QeccbDSaWBbHZZHU7ifediaR";
-const connection = new metaplex2.Connection("mainnet-beta");
 
-metaplex.getTokenAddressesFromMint(tokenMint).then( async (tokenAccounts) => {
-    for(const item of tokenAccounts)
-    {
-        //console.log(item.account.data); // same thing as calling getAccountData and getting the ["data"] of the returned result
-        
-        connection.getConfirmedSignaturesForAddress2(item.pubkey).then( (result) => {
-            for(const item of result)
-            {
-                connection.getTransaction(item.signature).then( (result) => {
-                    //console.log(JSON.stringify(result, null, "\t"));
-                    console.log(result.transaction.message.instructions[0].programIdIndex);
-                    if(result.transaction.message.instructions[0].programIdIndex === 12)
-                    {
-                        console.log("Confirmed Sale");
-                        console.log(result);
-                    }
-                    else if(result.transaction.message.instructions[0].programIdIndex === 9)
-                    {
-                        console.log("Mint");
-                        console.log(result);
-                    }
-                });
-            }
 
-        }); // THESE ARE THE TOKEN ADDRESSES
-    }
+
+
+
+
+
+metaplex.getPDA("eAxRBdqSdvpNcmYVhh7M5BajQdHRhZdePaLkPGSrpSr").then( (tokenPDA) => {
+
+    const test = new nftCollection();
+
+    test.collectionName  = "testingCollection";
+
+    test.addToCollection(tokenPDA, 0).then( async () => {
+        console.log(await metaplex.getNFTSales(test.items[0].mintKey));
+    });
+
 });
+
 
 
 /*
 
 
-const test = new nftCollection();
-
-test.collectionName  = "presidentialape";
-
-test.fetchSelfFromDatabase().then( () => {
-    test.sortByRarity();
-    database.saveToDatabase(test);
-});
-
-/*
+metaplex.getNFTSales("9V9y6RmNx9Xzd4DvrG7sx9Ve9cv11DGwAbNUvtB8D216").then( (result) => {
+    console.log(result);
+    console.log("test");
+})
 
 var collection = "space_runners";
 
