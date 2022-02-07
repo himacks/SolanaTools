@@ -3,6 +3,7 @@
 
 const btnGetMetaData = document.querySelector('#sendMetaDataBtn');
 const btnGetAvailableCollections = document.querySelector('#getCollectionsBtn');
+const btnGetCollectionSummary = document.querySelector("#getCollectionSummaryBtn");
 
 btnGetMetaData.addEventListener('click', function()
 {
@@ -18,11 +19,19 @@ btnGetMetaData.addEventListener('click', function()
 });
 
 btnGetAvailableCollections.addEventListener('click', function () {
-    getAvailableCollections().then( (availableCollections) => {
+    getAvailableCollections({"parseLimit": 5}).then( (availableCollections) => {
         availableCollections.forEach( (collectionName) => {
             insertCollectionsBox(collectionName);
         });
     });
+});
+
+btnGetCollectionSummary.addEventListener('click', function() {
+    var collectionName = $("#collectionName").val();
+
+    var data = {"collectionName": collectionName};
+
+    getCollectionSummary(data);
 });
 
 
@@ -45,22 +54,42 @@ function postData(data, extension)
         type: 'POST',
         success: function( data, status, xhttp) {
             // data will be true or false if you returned a json bool
-
+            
             insertCollectionsBox(data.collectionName);
        }
     });
 }
 
-function getAvailableCollections()
+function getAvailableCollections(data)
 {
     return new Promise( (resolve) => {
         $.ajax({
             url: 'http://localhost:4000/getAvailableCollections',
             type: 'GET',
+            data: data,
             success: function( data, status, xhttp) {
                 // data will be true or false if you returned a json bool
     
                 resolve(data.availableCollections);
+           }
+    
+        })
+    });
+    
+}
+
+function getCollectionSummary(data)
+{
+
+    return new Promise( (resolve) => {
+        $.ajax({
+            url: 'http://localhost:4000/getCollectionSummary',
+            data: data,
+            type: 'GET',
+            success: function( data, status, xhttp) {
+                // data will be true or false if you returned a json bool
+                console.log(data.collectionData);
+                resolve(data.collectionData);
            }
     
         })

@@ -86,16 +86,16 @@ let saveToDatabase = (nftCollection) =>
             fs.mkdirSync('./lib');
         }
 
-        fs.writeFile("./lib/" + nftCollection.collectionName +".json" , JSON.stringify(nftCollection), (err) => {
+        fs.writeFile("./lib/" + nftCollection.collectionID +".json" , JSON.stringify(nftCollection), (err) => {
             if(err) {
                 console.log(err);
             }
-            console.log("Success: File was saved as " + nftCollection.collectionName + ".json");
+            console.log("Success: File was saved as " + nftCollection.collectionID + ".json");
         });   
     }
 
 
-async function getAvailableCollections()
+async function getAvailableCollections(limit)
 {
     return new Promise((resolve) => {
 
@@ -108,26 +108,55 @@ async function getAvailableCollections()
             var collections = [];
     
             var count = 0;
+
+            var parseLimit = Math.min(files.length, limit);
     
-            files.forEach( (file) => {
+            for(let i = 0; i < parseLimit; i++) {
     
-                const collectionName = file.replace(".json", "");
+                const collectionID = files[i].replace(".json", "");
     
-                collections.push(collectionName);
+                collections.push(collectionID);
 
                 count++;
     
-                if(count === files.length)
+                if(count === parseLimit)
                 {
                     resolve(collections);
                 }
-            });
+            }
+        });
+    });
+}
+
+function getCollectionSummary(collectionID)
+{
+    return new Promise( (resolve, reject) => {
+        fs.readFile('./lib/' + collectionID + '.json', 'utf8' , (err, collectionJSONData) => {
+            if (!err)
+            {
+                const collectionData = JSON.parse(collectionJSONData);
+    
+                const name = collectionData.collectionName;
+                const size = collectionData.collectionSize;
+                const description = collectionData.collectionDescription;
+                const imgList = [];
+                for(let i = 0; i < Math.min(collectionData.items.length, 5); i++)
+                {
+                    imgList.push(collectionData.items[i].properties.files[0].uri);
+                }
+    
+                const retrievedData = {"collectionName": name, "collectionSize": size, "collectionDescription": description, "imgList": imgList};
+    
+                resolve(retrievedData);
+            }
+            else
+            {
+                reject();
+            }
         });
     });
     
-
-
 }
 
 
-module.exports = { queryNewCollection : queryNewCollection, getAvailableCollections : getAvailableCollections };
+module.exports = { queryNewCollection : queryNewCollection, getAvailableCollections : getAvailableCollections, getCollectionSummary: getCollectionSummary };

@@ -32,10 +32,8 @@ app.use("/queryCollectionMetaData", (req, res) => {
         var tokenAddress = req.body.tokenAddress;
 
         var tokenType = req.body.tokenType;
-
-        var letterNumber = /^[0-9a-zA-Z]+$/;
         
-        if(tokenAddress.match(letterNumber))
+        metaplex.getPDA(tokenAddress).then( () =>
         {
             console.log("Recieved POST Request to parse collection using " + tokenType + ": " + tokenAddress);
 
@@ -67,30 +65,49 @@ app.use("/queryCollectionMetaData", (req, res) => {
                     }
                 });
             }
-        }
-        else
-        {
+        }).catch( (err) => {
             console.log("Invalid Input Given...");
-        }
 
+        });
     }
 })
 
 app.use("/getAvailableCollections", (req, res) => {
+
+    const parseLiimt = req.query.parseLimit;
+
     if (req.method == 'GET') {
-        database.getAvailableCollections().then( (collectionList) => {
+
+        console.log("recieved GET request for getting Available Collections");
+
+        database.getAvailableCollections(parseLiimt).then( (collectionList) => {
             res.send({ "availableCollections" : collectionList });
+        });
+    }
+});
+
+app.use("/getCollectionSummary", (req, res) => {
+    
+    if (req.method == 'GET') {
+
+        var collectionName = req.query.collectionName;
+
+        console.log("recieved GET request for collection summary of " + collectionName);
+
+
+        database.getCollectionSummary(collectionName).then( (collectionData) => {
+            const foundData = { "collectionData" : collectionData };
+            res.send(foundData);
+        }).catch( (err) => {
+            console.log("No collection found...");
+            res.send(err);
         });
     }
 });
 
 
 
-
-
-
-
-
+/*
 metaplex.getPDA("eAxRBdqSdvpNcmYVhh7M5BajQdHRhZdePaLkPGSrpSr").then( (tokenPDA) => {
 
     const test = new nftCollection();
@@ -105,7 +122,7 @@ metaplex.getPDA("eAxRBdqSdvpNcmYVhh7M5BajQdHRhZdePaLkPGSrpSr").then( (tokenPDA) 
 
 
 
-/*
+
 
 
 metaplex.getNFTSales("9V9y6RmNx9Xzd4DvrG7sx9Ve9cv11DGwAbNUvtB8D216").then( (result) => {

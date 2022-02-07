@@ -1,12 +1,15 @@
 const metaplex = require("./metaplex.js");
 const fs = require('fs');
 const e = require("express");
+const { threadId } = require("worker_threads");
 
 class nftCollection {
 
     constructor() {
+        this.collectionID = "";
         this.collectionName = "";
         this.collectionSize = ""; 
+        this.collectionDescription = "";
         this.updateAuthority = "";
         this.fetched = false;
         this.beingFetched = false;
@@ -41,9 +44,14 @@ class nftCollection {
             nftItem.getBlockchainMetadata(tokenPDA, delay).then((success) => {
                 if(success)
                 {
-                    if(this.collectionName == "")
+                    if(this.collectionID == "")
                     {
-                        this.collectionName = nftItem.name.replace(/[^a-zA-Z]+/g, '').toLowerCase();
+                        this.collectionID = nftItem.name.replace(/[^a-zA-Z]+/g, '').toLowerCase();
+                        this.collectionName = nftItem.name.replace(/[^A-Za-z ]/g,'');
+                        this.collectionName = this.collectionName.substring(0, this.collectionName.length - 1);  
+                        metaplex.getAllNFTMetaData(tokenPDA, 0, 0).then( (allMetadata) => {
+                            this.collectionDescription = allMetadata.externalMetadata.description;
+                        });    
                     }
 
                     if(this.updateAuthority == "")
@@ -226,9 +234,9 @@ class nftCollection {
                 }
                 else
                 {
-                    //console.log("Reading lib directory for " + collectionName + "...")
+                    //console.log("Reading lib directory for " + collectionID + "...")
                     this.beingFetched = true;
-                    fs.readFile('./lib/' + this.collectionName + '.json', 'utf8' , (err, collectionJSONData) => {
+                    fs.readFile('./lib/' + this.collectionID + '.json', 'utf8' , (err, collectionJSONData) => {
                         if (!err)
                         {
                             //console.log("Collection Already Exists in File Database. Opening file for update.")
@@ -236,6 +244,7 @@ class nftCollection {
 
                             //console.log(collectionData);
 
+                            this.collectionID = collectionData.collectionID;
                             this.collectionName = collectionData.collectionName;
                             this.collectionSize = collectionData.collectionSize;
                             //this.attributeDictionary = collectionData.attributeDictionary;
