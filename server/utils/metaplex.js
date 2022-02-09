@@ -84,7 +84,10 @@ async function getAllNFTMetaData(tokenPDA, delay, attempt) {
                 //console.log("URI: " + metadata["uri"]);
                 //console.log("Name: " + metadata["name"]);
 
-                
+                if(err.response.data.includes("Not Found"))
+                {
+                    resolve("invalid");
+                }
                 console.log(metadataDataData["name"] + " Failed Attempt: "+ attempt + " - axios failed, retrying...")
                 console.log("URI: " + metadataDataData["uri"]);
 

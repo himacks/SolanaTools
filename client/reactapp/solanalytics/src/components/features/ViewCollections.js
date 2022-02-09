@@ -9,25 +9,35 @@ function ViewCollections() {
 
     function getCollectionCards()
     {
-        return new Promise( (resolve) => {
-            axios.get('http://localhost:4000/getAvailableCollections', { params: { parseLimit: 5 } }).then( (result) => {
-                let collectionsList = [];
-                let count = 0;
-                const limit = result.data.availableCollections.length;
-                result.data.availableCollections.forEach( (collectionName) => {
-                    axios.get('http://localhost:4000/getCollectionSummary', { params: { collectionName: collectionName } }).then( (result) => {
-                        const collectionData = result.data.collectionData;
-                        collectionsList.push(<CollectionCard collectionTitle={collectionData.collectionName} collectionCount={collectionData.collectionSize} collectionText={collectionData.collectionDescription} collectionImgs={collectionData.imgList}/>);
-                        count++;
+        axios.get('http://localhost:4000/getAvailableCollections', { params: { parseLimit: 10, skipAmt: 0 } }).then( (result) => {
+            let collectionsList = [];
+            let count = 0;
+            let collectionNames = result.data.availableCollections;
 
-                        if(count == limit)
-                        {
-                            setShowingCollections(collectionsList);
-                            resolve(collectionsList);
-                        }
-                    });
+            
+            axios.get('http://localhost:4000/getCollectionsSummary', { params: { collectionNames: collectionNames } }).then( (result) => {
+                const collectionsData = result.data.collectionsData;
+
+                let limit = result.data.collectionsData.length;
+
+                collectionsData.forEach( (collectionResponse) => {
+                    if (collectionResponse.status == 'fulfilled')
+                    {
+                        const collectionData = collectionResponse.value;
+                        collectionsList.push(<CollectionCard key={collectionData.collectionName} collectionTitle={collectionData.collectionName} collectionCount={collectionData.collectionSize} collectionText={collectionData.collectionDescription} collectionImgs={collectionData.imgList}/>);
+                        count++;
+                    }
+                    else
+                    {
+                        limit--;
+                    }
+
+                    if(count == limit)
+                    {
+                        setShowingCollections(collectionsList);
+                    }
                 });
-            });
+            });        
         });
 
     }

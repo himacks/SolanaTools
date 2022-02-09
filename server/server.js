@@ -74,29 +74,30 @@ app.use("/queryCollectionMetaData", (req, res) => {
 
 app.use("/getAvailableCollections", (req, res) => {
 
-    const parseLiimt = req.query.parseLimit;
+    const parseLimit = req.query.parseLimit;
+    const skipAmt = req.query.skipAmt;
 
     if (req.method == 'GET') {
 
-        console.log("recieved GET request for getting Available Collections");
+        console.log("recieved GET request for getting Available Collections | skip: " + skipAmt + ", parseLimit: " + parseLimit);
 
-        database.getAvailableCollections(parseLiimt).then( (collectionList) => {
+        database.getAvailableCollections(parseLimit, skipAmt).then( (collectionList) => {
             res.send({ "availableCollections" : collectionList });
         });
     }
 });
 
-app.use("/getCollectionSummary", (req, res) => {
+app.use("/getCollectionsSummary", (req, res) => {
     
     if (req.method == 'GET') {
 
-        var collectionName = req.query.collectionName;
+        var collectionNames = req.query.collectionNames;
 
-        console.log("recieved GET request for collection summary of " + collectionName);
+        console.log("recieved GET request for collection summary of " + collectionNames);
 
 
-        database.getCollectionSummary(collectionName).then( (collectionData) => {
-            const foundData = { "collectionData" : collectionData };
+        database.getCollectionsSummary(collectionNames).then( (collectionData) => {
+            const foundData = { "collectionsData" : collectionData };
             res.send(foundData);
         }).catch( (err) => {
             console.log("No collection found...");
@@ -105,9 +106,16 @@ app.use("/getCollectionSummary", (req, res) => {
     }
 });
 
-
-
 /*
+database.getCollectionsSummary(["boryokumonkeyz", "chiyokokjima", "fujilions", "theunrevealed"]).then( (collectionsData) => {
+    console.log(collectionsData);
+}).catch( (err) => {
+    console.log("No collection found...");
+    
+});
+
+
+
 metaplex.getPDA("eAxRBdqSdvpNcmYVhh7M5BajQdHRhZdePaLkPGSrpSr").then( (tokenPDA) => {
 
     const test = new nftCollection();

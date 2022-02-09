@@ -19,7 +19,7 @@ btnGetMetaData.addEventListener('click', function()
 });
 
 btnGetAvailableCollections.addEventListener('click', function () {
-    getAvailableCollections({"parseLimit": 5}).then( (availableCollections) => {
+    getAvailableCollections({"parseLimit": 5, "skipAmt": 0}).then( (availableCollections) => {
         availableCollections.forEach( (collectionName) => {
             insertCollectionsBox(collectionName);
         });
