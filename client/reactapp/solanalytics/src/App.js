@@ -1,14 +1,10 @@
-import Header from './components/Header';
 import AppContent from './components/AppContent'
-import * as reactFeather from 'react-feather';
+import { Route } from 'react-router-dom'
 
 
 function App() {
   return (
-    <div className="appDiv">
-      <Header />
-      <AppContent />
-    </div>
+    <AppContent />
   );
 }
 

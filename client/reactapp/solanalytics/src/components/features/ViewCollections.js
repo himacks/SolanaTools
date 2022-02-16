@@ -3,11 +3,11 @@ import CollectionCard from "../CollectionCard"
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 
-function ViewCollections() {
+function ViewCollections(props) {
 
     const [currentShowingCollections, setShowingCollections] = useState();
 
-    function getCollectionCards()
+    let getCollectionCards = () =>
     {
         axios.get('http://localhost:4000/getAvailableCollections', { params: { parseLimit: 10, skipAmt: 0 } }).then( (result) => {
             let collectionsList = [];
@@ -21,10 +21,10 @@ function ViewCollections() {
                 let limit = result.data.collectionsData.length;
 
                 collectionsData.forEach( (collectionResponse) => {
-                    if (collectionResponse.status == 'fulfilled')
+                    if (collectionResponse.status === 'fulfilled')
                     {
                         const collectionData = collectionResponse.value;
-                        collectionsList.push(<CollectionCard key={collectionData.collectionName} collectionTitle={collectionData.collectionName} collectionCount={collectionData.collectionSize} collectionText={collectionData.collectionDescription} collectionImgs={collectionData.imgList}/>);
+                        collectionsList.push(<CollectionCard key={collectionData.collectionName} onClick={sendNameUpChain} collectionTitle={collectionData.collectionName} collectionCount={collectionData.collectionSize} collectionText={collectionData.collectionDescription} collectionImgs={collectionData.imgList}/>);
                         count++;
                     }
                     else
@@ -32,7 +32,7 @@ function ViewCollections() {
                         limit--;
                     }
 
-                    if(count == limit)
+                    if(count === limit)
                     {
                         setShowingCollections(collectionsList);
                     }
@@ -40,6 +40,10 @@ function ViewCollections() {
             });        
         });
 
+    }
+
+    const sendNameUpChain = (data) => {
+        props.onCollectionClick(data);
     }
 
     useEffect(() => {

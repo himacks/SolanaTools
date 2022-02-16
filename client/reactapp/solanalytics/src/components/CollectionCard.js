@@ -36,8 +36,12 @@ function CollectionCard(props) {
         }
     }
 
+    const sendNameUpChain = () => {
+        props.onClick(props.collectionTitle)
+    };
+
     return(
-        <div className="cardCont" onMouseOver={MouseOver} onMouseOut={MouseOut}>
+        <div className="cardCont" onMouseOver={MouseOver} onMouseOut={MouseOut} onClick={ sendNameUpChain }>
             <div className="cardAttrCont">
                 <div className="cardImgCont">
                     <img className="cardImgSrc" src={currentShowingImage} alt="new" />

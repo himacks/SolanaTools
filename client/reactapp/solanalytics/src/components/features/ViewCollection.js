@@ -1,6 +1,14 @@
-function ViewCollection() {
+import FeatureHeader from "../FeatureHeader"
 
-    return(<div></div>)
+function ViewCollection(props) {
+
+    return([
+        <FeatureHeader key="collHead" type="collections" text={props.name} />,
+        <div key="collCont" className="viewNFTsCont featureCont">
+            <div key="collGrid" className="viewNFTGrid"> 
+            </div>
+        </div>
+    ]);
 
 }
 
