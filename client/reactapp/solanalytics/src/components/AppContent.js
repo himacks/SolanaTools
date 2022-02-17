@@ -32,15 +32,7 @@ function AppContent() {
                     </div>
                     <div className="dynamicFeatureDiv">
                         <Routes>
-                            <Route
-                                exact
-                                path="/"
-                                render={() => {
-                                    return (
-                                        <Navigate to="/collectons" /> 
-                                    )
-                                }}
-                            />
+                            <Route exact path="/" element={ <Navigate to="/collections" />} />
                             <Route path="/collections" element={<ViewCollections /> } />
                             <Route path="/raritycheck" element={<ViewRarityCheck />} />
                             <Route path="/upcoming" element={<ViewUpcoming />} />
