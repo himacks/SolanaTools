@@ -91,7 +91,7 @@ app.use("/getCollectionsSummary", (req, res) => {
     
     if (req.method == 'GET') {
 
-        var collectionNames = req.query.collectionNames;
+        const collectionNames = req.query.collectionNames;
 
         console.log("recieved GET request for collection summary of " + collectionNames);
 
@@ -106,12 +106,34 @@ app.use("/getCollectionsSummary", (req, res) => {
     }
 });
 
+app.use("/getCollectionNFTs", (req, res) => {
+
+    if(req.method == "GET")
+    {
+        const collectionName = req.query.collectionName;
+        const skipAmt = req.query.skipAmt;
+        const queryLimit = req.query.queryLimit;
+
+        console.log("recieved GET request for collection NFTs of " + collectionName);
+
+        database.getCollectionNFTs(collectionName, queryLimit, skipAmt).then ( (nftListData) => {
+            const foundData = { "nftListData" : nftListData };
+            res.send(foundData);
+        }).catch( (err) => {
+            console.log("No collection found...");
+            res.send(err);
+        });
+
+    }
+
+});
+
 /*
-database.getCollectionsSummary(["boryokumonkeyz", "chiyokokjima", "fujilions", "theunrevealed"]).then( (collectionsData) => {
+
+database.getCollectionNFTs("defipirate", 20, 0).then( (collectionsData) => {
     console.log(collectionsData);
 }).catch( (err) => {
     console.log("No collection found...");
-    
 });
 
 

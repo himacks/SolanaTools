@@ -3,7 +3,7 @@ function Header() {
         <div className="headerCont">
             <div className="pageLogoCont">
                 <div className="iconCont headerCont">
-                    <img id="appLogo" src="icon192.png"></img>
+                    <img id="appLogo" src={require('../icon192.png')} />
                 </div>
                 <div className="titleCont headerCont">
                     <text id="appTitle">Solanalytics</text>

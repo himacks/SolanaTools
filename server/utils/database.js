@@ -128,6 +128,29 @@ async function getAvailableCollections(limit, skipAmt)
     });
 }
 
+function getCollectionNFTs(collectionID, limit, skipAmt)
+{
+    return new Promise( (resolve, reject) => {
+        fs.readFile('./lib/' + collectionID + '.json', 'utf8' , (err, collectionJSONData) => {
+            if (!err)
+            {
+                const collectionData = JSON.parse(collectionJSONData);
+
+                const name = collectionData.collectionName;
+                const nftList = collectionData.items.slice(skipAmt, skipAmt + limit);
+                const retrievedData = {"collectionName": name, "nftList": nftList};
+                
+                resolve(retrievedData);
+
+            }
+            else
+            {
+                reject("Collection not found.");
+            }
+        });
+    });
+}
+
 function getCollectionsSummary(collectionIDs)
 {
     return new Promise( (resolve) => {
@@ -143,6 +166,7 @@ function getCollectionsSummary(collectionIDs)
                         const collectionData = JSON.parse(collectionJSONData);
             
                         const name = collectionData.collectionName;
+                        const id = collectionData.collectionID;
                         const size = collectionData.collectionSize;
                         const description = collectionData.collectionDescription;
                         const imgList = [];
@@ -151,7 +175,7 @@ function getCollectionsSummary(collectionIDs)
                             imgList.push(collectionData.items[i].properties.files[0].uri);
                         }
             
-                        const retrievedData = {"collectionName": name, "collectionSize": size, "collectionDescription": description, "imgList": imgList};
+                        const retrievedData = {"collectionName": name, "collectionSize": size, "collectionDescription": description, "imgList": imgList, "collectionID": id};
             
                         resolve(retrievedData);
                     }
@@ -173,4 +197,4 @@ function getCollectionsSummary(collectionIDs)
 }
 
 
-module.exports = { queryNewCollection : queryNewCollection, getAvailableCollections : getAvailableCollections, getCollectionsSummary: getCollectionsSummary };
+module.exports = { getCollectionNFTs: getCollectionNFTs, queryNewCollection : queryNewCollection, getAvailableCollections : getAvailableCollections, getCollectionsSummary: getCollectionsSummary };

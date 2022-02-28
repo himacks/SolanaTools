@@ -34,6 +34,7 @@ function AppContent() {
                         <Routes>
                             <Route exact path="/" element={ <Navigate to="/collections" />} />
                             <Route path="/collections" element={<ViewCollections /> } />
+                            <Route path="/collections/:collectionid" element={<ViewCollection />} />
                             <Route path="/raritycheck" element={<ViewRarityCheck />} />
                             <Route path="/upcoming" element={<ViewUpcoming />} />
                             <Route path="/analytics" element={<ViewAnalytics />} />

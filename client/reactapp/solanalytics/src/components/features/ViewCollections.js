@@ -24,7 +24,7 @@ function ViewCollections(props) {
                     if (collectionResponse.status === 'fulfilled')
                     {
                         const collectionData = collectionResponse.value;
-                        collectionsList.push(<CollectionCard key={collectionData.collectionName} onClick={sendNameUpChain} collectionTitle={collectionData.collectionName} collectionCount={collectionData.collectionSize} collectionText={collectionData.collectionDescription} collectionImgs={collectionData.imgList}/>);
+                        collectionsList.push(<CollectionCard key={collectionData.collectionName} collectionID={collectionData.collectionID} collectionTitle={collectionData.collectionName} collectionCount={collectionData.collectionSize} collectionText={collectionData.collectionDescription} collectionImgs={collectionData.imgList}/>);
                         count++;
                     }
                     else
@@ -40,10 +40,6 @@ function ViewCollections(props) {
             });        
         });
 
-    }
-
-    const sendNameUpChain = (data) => {
-        props.onCollectionClick(data);
     }
 
     useEffect(() => {

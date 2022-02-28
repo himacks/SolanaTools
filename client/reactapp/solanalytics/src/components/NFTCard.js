@@ -1,49 +1,21 @@
 import { useState, useEffect } from 'react';
 import {Link} from 'react-router-dom';
 
-function CollectionCard(props) {
-
+function NFTCard(props) {
 
     const [currentShowingImage, setShowingImage] = useState((props.collectionImgs)[0]);
-    const [intervalId, setIntervalId] = useState(0);
-    /*
-    useEffect(() => {
-        
-        
-        const interval = setInterval(() => {
-            setShowingImage((props.collectionImgs)[(++count)%props.collectionImgs.length]) 
-        }, 500);
-        return () => {
-          clearInterval(interval);
-        };
-      }, []);
 
-      */
-
-    var count = 0;
-    
     function MouseOver() {
-        const newIntervalId = setInterval(() => {
-            setShowingImage((props.collectionImgs)[(++count)%props.collectionImgs.length]);
-        }, 300);
-        setIntervalId(newIntervalId);
+
     }
 
     function MouseOut() {
-        if (intervalId) {
-            clearInterval(intervalId);
-            setIntervalId(0);
-            return;
-        }
-    }
 
-    const sendNameUpChain = () => {
-        props.onClick(props.collectionTitle)
-    };
+    }
 
     return(
         <div className="cardCont" onMouseOver={MouseOver} onMouseOut={MouseOut}>
-            <Link to={props.collectionID}>
+            <Link to={null}>
                 <div className="cardAttrCont">
                     <div className="cardImgCont">
                         <img className="cardImgSrc" src={currentShowingImage} alt="new" />
@@ -52,18 +24,18 @@ function CollectionCard(props) {
                         <div className="cardTitleCont">
                             <div className="cardTextCont">
                                 <text className="cardTitleText">
-                                    {props.collectionTitle}
+                                    {props.nftName}
                                 </text>
                             </div>
                             <div className="cardCountCont">
                                 <div className="cardcountBox">
-                                    <text className="cardCountText">{props.collectionCount}</text>
+                                    <text className="cardCountText">{props.nftRarity}</text>
                                 </div>
                             </div>
                         </div>
                         <div className="cardDetailsCont">
                             <text className="cardDetailsText">
-                                {props.collectionText}
+
                             </text>
                         </div>
                     </div>
@@ -73,4 +45,5 @@ function CollectionCard(props) {
     );
 }
 
-export default CollectionCard;
+
+export default NFTCard;
