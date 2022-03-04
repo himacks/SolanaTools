@@ -48,8 +48,8 @@ function ViewCollections(props) {
 
     return([
         <FeatureHeader key="collHead" type="collections" text="Collections" />,
-        <div key="collCont" className="viewCollectionsCont featureCont">
-            <div key="collGrid" className="viewCollectionGrid"> 
+        <div key="collCont" className="viewCardsCont featureCont">
+            <div key="collGrid" className="viewCollectionGrid viewGrid"> 
                 {currentShowingCollections}
             </div>
         </div>

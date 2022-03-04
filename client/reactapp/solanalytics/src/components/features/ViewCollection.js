@@ -2,7 +2,7 @@ import FeatureHeader from "../FeatureHeader"
 import NFTCard from "../NFTCard"
 import { useParams } from "react-router-dom";
 import axios from 'axios';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 
 function ViewCollection() {
@@ -11,7 +11,7 @@ function ViewCollection() {
 
     const [collectionTitle, setCollectionTitle] = useState();
 
-    const [currentShowingNFTs, setShowingCollections] = useState([]);
+    const [currentShowingNFTs, setShowingNFTs] = useState([]);
 
     let getCollectionNFTs = () =>
     {
@@ -20,21 +20,33 @@ function ViewCollection() {
 
             setCollectionTitle(collectionsData.collectionName);
 
-            console.log(collectionsData);
-
-            axios.get('http://localhost:4000/getCollectionNFTs', { params: { collectionName: collectionid, skipAmt: 0, queryLimit: 5 } }).then( (result) => {
-                if(result.data.nftListData)
+            axios.get('http://localhost:4000/getCollectionNFTs', { params: { collectionName: collectionid, skipAmt: 0, queryLimit: 20 } }).then( (result) => {
+        
+            if(result.data.nftListData)
                 {
                     const nftList = result.data.nftListData.nftList;
+                    let nftViewList = [];
+                    let count = 0;
+                    const limit = nftList.length;
+
+                    //console.log(nftList);
 
                     nftList.forEach( (nftItem) => {
-                        console.log(nftItem);
 
                         const nftName = nftItem.name;
                         const nftRank = nftItem.rank;
                         const nftImage = nftItem.properties.files[0].uri;
 
-                        console.log(nftImage);
+                        const nftKey = nftName.replaceAll(" ", "");
+
+                        nftViewList.push(<NFTCard key={nftKey} nftName={nftName} nftRarity={nftRank} collectionImg={nftImage}  />);
+                        count++;
+
+                        if(count === limit)
+                        {
+                            setShowingNFTs(nftViewList);
+                        }
+
                     });
                 }
                 //console.log(result);
@@ -47,10 +59,23 @@ function ViewCollection() {
         getCollectionNFTs();
       }, []);
 
+    const gridInnerRef = useRef();
+
+
+    const onScroll = () => {
+        if (gridInnerRef.current) {
+          const { scrollTop, scrollHeight, clientHeight } = gridInnerRef.current;
+          if (scrollTop + clientHeight === scrollHeight) {
+            // TO SOMETHING HERE
+            console.log('Reached bottom')
+          }
+        }
+      };
+
     return([
         <FeatureHeader key="collHead" type="collections" text={collectionTitle} />,
-        <div key="collCont" className="viewNFTsCont featureCont">
-            <div key="collGrid" className="viewNFTGrid"> 
+        <div key="collCont" className="viewCardsCont featureCont" onScroll={() => { onScroll() } } ref={gridInnerRef}>
+            <div key="collGrid" className="viewNFTGrid viewGrid"> 
                 {currentShowingNFTs}
             </div>
         </div>

@@ -192,11 +192,11 @@ html {
   border: none;
 }
 
-.viewCollectionsCont {
+.viewCardsCont {
   overflow-y: scroll;
 }
 
-.viewCollectionGrid {
+.viewGrid {
   width: 100%;
   height: min-content;
   display: grid;
@@ -205,6 +205,10 @@ html {
   grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
   padding: 2rem;
   margin-bottom: 5rem;
+}
+
+.viewNFTGrid {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
 }
 
 .cardCont {
@@ -245,12 +249,29 @@ html {
   color: white;
 }
 
+.cardTextCont {
+  flex: 1 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0));
+  color: white;
+}
+
+.nftCardTextCont {
+  white-space: normal;
+}
+
 .cardTitleText {
   color: #ffffff;
   font-size: 22px;
   font-weight: 600;
 }
 
+.nftCardTitleText {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+}
 .cardCountCont {
   display: flex;
   flex: 0 0 auto;
@@ -278,6 +299,10 @@ html {
   height: 4rem;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.nftCardDetailsCont {
+  height: 4rem;
 }
 
 .cardDetailsText {

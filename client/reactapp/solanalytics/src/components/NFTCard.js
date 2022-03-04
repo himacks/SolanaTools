@@ -3,7 +3,7 @@ import {Link} from 'react-router-dom';
 
 function NFTCard(props) {
 
-    const [currentShowingImage, setShowingImage] = useState((props.collectionImgs)[0]);
+    const [currentShowingImage, setShowingImage] = useState(props.collectionImg);
 
     function MouseOver() {
 
@@ -15,15 +15,15 @@ function NFTCard(props) {
 
     return(
         <div className="cardCont" onMouseOver={MouseOver} onMouseOut={MouseOut}>
-            <Link to={null}>
+            <Link to={"/"}>
                 <div className="cardAttrCont">
                     <div className="cardImgCont">
                         <img className="cardImgSrc" src={currentShowingImage} alt="new" />
                     </div>
                     <div className="cardInfoCont">
                         <div className="cardTitleCont">
-                            <div className="cardTextCont">
-                                <text className="cardTitleText">
+                            <div className="nftCardTextCont cardTextCont">
+                                <text className="nftCardTitleText">
                                     {props.nftName}
                                 </text>
                             </div>
@@ -33,7 +33,7 @@ function NFTCard(props) {
                                 </div>
                             </div>
                         </div>
-                        <div className="cardDetailsCont">
+                        <div className="nftCardDetailsCont cardDetailsCont">
                             <text className="cardDetailsText">
 
                             </text>
